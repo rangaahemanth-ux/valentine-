@@ -1,5 +1,5 @@
 // ✅ FIXED VERSION - Safe Anti-Blur Patch
-console.log("✅ Game.js loaded - Fixed version");
+console.log("✅ Game.js FINAL FIX - Bloom removed, lighting maxed");
 
 // Tanmai's Sanctuary - Core Game Engine (FIXED & COMPLETE)
 // A production-grade 3D interactive experience
@@ -147,20 +147,9 @@ class GameEngine {
     }
 
     setupPostProcessing() {
-        try {
-            this.composer = new THREE.EffectComposer(this.renderer);
-            const renderPass = new THREE.RenderPass(this.scene, this.camera);
-            this.composer.addPass(renderPass);
-            
-            this.bloomPass = new THREE.UnrealBloomPass(
-                new THREE.Vector2(window.innerWidth, window.innerHeight),
-                0.2, 0.4, 0.92
-            );
-            this.composer.addPass(this.bloomPass);
-        } catch (e) {
-            console.warn('Post-processing unavailable:', e);
-            this.composer = null;
-        }
+        // Post-processing completely disabled for sharp rendering
+        this.composer = null;
+        console.log("🚫 Bloom disabled - rendering directly");
     }
 
     // ═══════════════════════════════════════
@@ -196,7 +185,7 @@ class GameEngine {
         const skyTex = new THREE.CanvasTexture(skyCanvas);
         skyTex.mapping = THREE.EquirectangularReflectionMapping;
         this.scene.background = skyTex;
-        this.scene.fog = new THREE.FogExp2(0x0a0a2e, 0.005);
+        this.scene.fog = new THREE.FogExp2(0x0a0a2e, 0.001);
     }
 
     // ═══════════════════════════════════════
@@ -220,7 +209,7 @@ class GameEngine {
         };
 
         // Moonlight (default night scene)
-        this.systems.lighting.moon = new THREE.DirectionalLight(0x88aaff, 1.8);
+        this.systems.lighting.moon = new THREE.DirectionalLight(0x88aaff, 2.5);
         this.systems.lighting.moon.position.set(-30, 40, -20);
         this.systems.lighting.moon.castShadow = true;
         this.systems.lighting.moon.shadow.mapSize.set(2048, 2048);
@@ -233,7 +222,7 @@ class GameEngine {
         this.scene.add(this.systems.lighting.moon);
 
         // Warm ambient
-        this.systems.lighting.ambient = new THREE.AmbientLight(0x332244, 1.2);
+        this.systems.lighting.ambient = new THREE.AmbientLight(0x332244, 2.0);
         this.scene.add(this.systems.lighting.ambient);
 
         // Warm room lights
