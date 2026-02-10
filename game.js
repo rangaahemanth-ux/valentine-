@@ -151,7 +151,7 @@ class GameEngine {
             
             this.bloomPass = new THREE.UnrealBloomPass(
                 new THREE.Vector2(window.innerWidth, window.innerHeight),
-                0.8, 0.4, 0.85
+                0.3, 0.4, 0.9
             );
             this.composer.addPass(this.bloomPass);
         } catch (e) {
