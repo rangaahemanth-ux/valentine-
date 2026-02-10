@@ -144,6 +144,9 @@ class GameEngine {
     }
 
     setupPostProcessing() {
+        // Bloom disabled for sharp, clear visuals
+        this.composer = null;
+        /*
         try {
             this.composer = new THREE.EffectComposer(this.renderer);
             const renderPass = new THREE.RenderPass(this.scene, this.camera);
@@ -158,6 +161,7 @@ class GameEngine {
             console.warn('Post-processing unavailable:', e);
             this.composer = null;
         }
+        */
     }
 
     // ═══════════════════════════════════════
@@ -205,6 +209,11 @@ class GameEngine {
         );
         this.camera.position.copy(this.gameState.player.position);
         this.scene.add(this.camera);
+        
+        // Add camera headlight for better visibility
+        const cameraLight = new THREE.PointLight(0xffffff, 0.5, 10);
+        this.camera.add(cameraLight);
+        cameraLight.position.set(0, 0, 0);
     }
 
     // ═══════════════════════════════════════
@@ -217,7 +226,7 @@ class GameEngine {
         };
 
         // Moonlight (default night scene)
-        this.systems.lighting.moon = new THREE.DirectionalLight(0x88aaff, 0.6);
+        this.systems.lighting.moon = new THREE.DirectionalLight(0x88aaff, 1.5);
         this.systems.lighting.moon.position.set(-30, 40, -20);
         this.systems.lighting.moon.castShadow = true;
         this.systems.lighting.moon.shadow.mapSize.set(2048, 2048);
@@ -230,18 +239,18 @@ class GameEngine {
         this.scene.add(this.systems.lighting.moon);
 
         // Warm ambient
-        this.systems.lighting.ambient = new THREE.AmbientLight(0x332244, 0.4);
+        this.systems.lighting.ambient = new THREE.AmbientLight(0x332244, 1.0);
         this.scene.add(this.systems.lighting.ambient);
 
         // Warm room lights
-        const roomLight1 = new THREE.PointLight(0xffe8c8, 2.5, 18, 2);
+        const roomLight1 = new THREE.PointLight(0xffe8c8, 5.0, 18, 2);
         roomLight1.position.set(-3, 3.5, -5);
         roomLight1.castShadow = true;
         roomLight1.shadow.mapSize.set(1024, 1024);
         this.scene.add(roomLight1);
         this.systems.lighting.pointLights.push(roomLight1);
 
-        const roomLight2 = new THREE.PointLight(0xffe0b2, 2.0, 15, 2);
+        const roomLight2 = new THREE.PointLight(0xffe0b2, 4.0, 15, 2);
         roomLight2.position.set(4, 3.5, -5);
         roomLight2.castShadow = true;
         this.scene.add(roomLight2);
