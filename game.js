@@ -1,5 +1,5 @@
 // ✅ FIXED VERSION - Safe Anti-Blur Patch
-console.log("✅ Game.js FINAL FIX - Bloom removed, lighting maxed");
+console.log("✅ Game.js v3 - Models should load now!");
 
 // Tanmai's Sanctuary - Core Game Engine (FIXED & COMPLETE)
 // A production-grade 3D interactive experience
@@ -212,7 +212,7 @@ class GameEngine {
         this.systems.lighting.moon = new THREE.DirectionalLight(0x88aaff, 2.5);
         this.systems.lighting.moon.position.set(-30, 40, -20);
         this.systems.lighting.moon.castShadow = true;
-        this.systems.lighting.moon.shadow.mapSize.set(2048, 2048);
+        this.systems.lighting.moon.shadow.mapSize.set(512, 512);
         this.systems.lighting.moon.shadow.camera.near = 0.5;
         this.systems.lighting.moon.shadow.camera.far = 200;
         this.systems.lighting.moon.shadow.camera.left = -30;
@@ -229,7 +229,7 @@ class GameEngine {
         const roomLight1 = new THREE.PointLight(0xffe8c8, 4.0, 18, 2);
         roomLight1.position.set(-3, 3.5, -5);
         roomLight1.castShadow = true;
-        roomLight1.shadow.mapSize.set(1024, 1024);
+        roomLight1.shadow.mapSize.set(512, 512);
         this.scene.add(roomLight1);
         this.systems.lighting.pointLights.push(roomLight1);
 
@@ -490,7 +490,7 @@ class GameEngine {
         this.updateLoadingProgress(62, 'Loading 3D models...');
         const modelPromises = {
             room: this.loadModel('assets/models/japanese_style_room.glb'),
-            bonsai: this.loadModel('assets/models/cc0__youko_sakura_prunus_yoko.glb'),
+            bonsai: this.loadModel('assets/models/cc0_youko_sakura_prunus_yoko.glb'),
             tv: this.loadModel('assets/models/old_tv.glb'),
             postbox: this.loadModel('assets/models/british_postbox.glb'),
             lantern: this.loadModel('assets/models/spherical_japanese_paper_lantern.glb'),
