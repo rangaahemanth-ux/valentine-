@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "date": "2025-02-15T10:30:00.000Z",
+    "title": "Welcome to Our Sanctuary 🏠",
+    "content": "My dearest Tanmai, this virtual sanctuary is created just for you. Every element here represents something about our love. The bonsai grows with our care, the TV shows our memories, and this entire world exists because of you.",
+    "read": true
+  },
+  {
+    "id": 2,
+    "date": "2025-02-14T09:00:00.000Z",
+    "title": "Valentine's Day Special ❤️",
+    "content": "Happy Valentine's Day, my love! Every day with you feels like Valentine's Day. Your love colors my world in ways I never imagined possible. Forever yours.",
+    "read": false
+  },
+  {
+    "id": 3,
+    "date": "2025-02-01T20:15:00.000Z",
+    "title": "Just Because 💛",
+    "content": "My beautiful Tanmai, I created this virtual sanctuary for you because you deserve a peaceful place all your own. A place where the stars shine just for you, where flowers bloom in every color, and where our memories play like a beautiful movie.",
+    "read": false
+  },
+  {
+    "id": 4,
+    "date": "2025-01-20T14:45:00.000Z",
+    "title": "Our Adventures Together 🌸",
+    "content": "Remember our moments together? Every laugh, every quiet moment, every silly conversation. That's when I realized that with you, even the simplest moments become extraordinary adventures. I never want it to end.",
+    "read": false
+  }
+]

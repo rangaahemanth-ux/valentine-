@@ -1,0 +1,13 @@
+{
+  "name": "tanmai-sanctuary",
+  "version": "2.0.0",
+  "description": "An interactive 3D love letter experience for Tanmai",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx live-server --port=8080",
+    "dev": "npx live-server --port=8080 --open=/"
+  },
+  "keywords": ["3d", "game", "interactive", "love", "threejs"],
+  "author": "Hemanth",
+  "license": "MIT"
+}
