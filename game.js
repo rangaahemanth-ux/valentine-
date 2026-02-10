@@ -1,6 +1,5 @@
-// 🔥 ULTRA-FIX VERSION 2 - Generated: 2025-02-10 03:15 AM UTC
-// If you see this in browser console, the file updated successfully!
-console.log("🎮 GAME.JS ULTRA-FIX V2 LOADED - Blur should be GONE");
+// ✅ FIXED VERSION - Safe Anti-Blur Patch
+console.log("✅ Game.js loaded - Fixed version");
 
 // Tanmai's Sanctuary - Core Game Engine (FIXED & COMPLETE)
 // A production-grade 3D interactive experience
@@ -19,7 +18,7 @@ class GameEngine {
             started: false,
             paused: false,
             player: {
-                position: new THREE.Vector3(0, 1.6, 15),
+                position: new THREE.Vector3(0, 1.6, 5),
                 rotation: new THREE.Euler(0, 0, 0),
                 velocity: new THREE.Vector3(0, 0, 0),
                 canMove: false,
@@ -148,9 +147,6 @@ class GameEngine {
     }
 
     setupPostProcessing() {
-        // Bloom disabled for sharp, clear visuals
-        this.composer = null;
-        /*
         try {
             this.composer = new THREE.EffectComposer(this.renderer);
             const renderPass = new THREE.RenderPass(this.scene, this.camera);
@@ -158,23 +154,49 @@ class GameEngine {
             
             this.bloomPass = new THREE.UnrealBloomPass(
                 new THREE.Vector2(window.innerWidth, window.innerHeight),
-                0.3, 0.4, 0.9
+                0.2, 0.4, 0.92
             );
             this.composer.addPass(this.bloomPass);
         } catch (e) {
             console.warn('Post-processing unavailable:', e);
             this.composer = null;
         }
-        */
     }
 
     // ═══════════════════════════════════════
     // SCENE
     // ═══════════════════════════════════════
-        // Simple solid background for debugging
-        this.scene.background = new THREE.Color(0x1a1a3e);
-        // Fog completely disabled
-        // this.scene.fog = new THREE.FogExp2(0x0a0a2e, 0.002);
+    async initScene() {
+        this.scene = new THREE.Scene();
+        
+        // Gradient sky background
+        const skyCanvas = document.createElement('canvas');
+        skyCanvas.width = 512;
+        skyCanvas.height = 512;
+        const ctx = skyCanvas.getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 512);
+        gradient.addColorStop(0, '#0a0a2e');
+        gradient.addColorStop(0.3, '#1a1a4e');
+        gradient.addColorStop(0.6, '#2d1b4e');
+        gradient.addColorStop(1, '#0d0d1a');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 512, 512);
+        
+        // Stars
+        for (let i = 0; i < 200; i++) {
+            const x = Math.random() * 512;
+            const y = Math.random() * 300;
+            const r = Math.random() * 1.5;
+            ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.random() * 0.7})`;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        const skyTex = new THREE.CanvasTexture(skyCanvas);
+        skyTex.mapping = THREE.EquirectangularReflectionMapping;
+        this.scene.background = skyTex;
+        this.scene.fog = new THREE.FogExp2(0x0a0a2e, 0.005);
     }
 
     // ═══════════════════════════════════════
@@ -186,11 +208,6 @@ class GameEngine {
         );
         this.camera.position.copy(this.gameState.player.position);
         this.scene.add(this.camera);
-        
-        // Add camera headlight for better visibility
-        const cameraLight = new THREE.PointLight(0xffffff, 0.5, 10);
-        this.camera.add(cameraLight);
-        cameraLight.position.set(0, 0, 0);
     }
 
     // ═══════════════════════════════════════
@@ -203,7 +220,7 @@ class GameEngine {
         };
 
         // Moonlight (default night scene)
-        this.systems.lighting.moon = new THREE.DirectionalLight(0x88aaff, 1.5);
+        this.systems.lighting.moon = new THREE.DirectionalLight(0x88aaff, 1.8);
         this.systems.lighting.moon.position.set(-30, 40, -20);
         this.systems.lighting.moon.castShadow = true;
         this.systems.lighting.moon.shadow.mapSize.set(2048, 2048);
@@ -216,22 +233,18 @@ class GameEngine {
         this.scene.add(this.systems.lighting.moon);
 
         // Warm ambient
-        this.systems.lighting.ambient = new THREE.AmbientLight(0x332244, 1.0);
+        this.systems.lighting.ambient = new THREE.AmbientLight(0x332244, 1.2);
         this.scene.add(this.systems.lighting.ambient);
 
-        // Hemisphere light for overall brightness
-        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 2.0);
-        this.scene.add(hemiLight);
-
         // Warm room lights
-        const roomLight1 = new THREE.PointLight(0xffe8c8, 5.0, 18, 2);
+        const roomLight1 = new THREE.PointLight(0xffe8c8, 4.0, 18, 2);
         roomLight1.position.set(-3, 3.5, -5);
         roomLight1.castShadow = true;
         roomLight1.shadow.mapSize.set(1024, 1024);
         this.scene.add(roomLight1);
         this.systems.lighting.pointLights.push(roomLight1);
 
-        const roomLight2 = new THREE.PointLight(0xffe0b2, 4.0, 15, 2);
+        const roomLight2 = new THREE.PointLight(0xffe0b2, 3.5, 15, 2);
         roomLight2.position.set(4, 3.5, -5);
         roomLight2.castShadow = true;
         this.scene.add(roomLight2);
