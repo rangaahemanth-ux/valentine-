@@ -52,7 +52,7 @@ html, body {
     justify-content: center;
     align-items: center;
     background: linear-gradient(135deg, rgba(0,0,0,0.85) 0%, rgba(30,20,40,0.92) 100%);
-    backdrop-filter: blur(20px);
+    /* backdrop-filter: blur removed */
     pointer-events: all;
 }
 
@@ -84,7 +84,7 @@ html, body {
     padding: 45px;
     border: 1px solid rgba(255,255,255,0.08);
     box-shadow: 0 30px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
-    backdrop-filter: blur(15px);
+    /* backdrop-filter: blur removed */
 }
 
 .loader-spinner {
@@ -321,7 +321,7 @@ html, body {
     padding: 14px 18px;
     border-radius: 14px;
     border: 1px solid rgba(255,255,255,0.08);
-    backdrop-filter: blur(12px);
+    /* backdrop-filter: blur removed */
 }
 
 .time-icon { font-size: 1.4rem; color: #ffcc00; }
@@ -338,7 +338,7 @@ html, body {
     padding: 10px 16px;
     border-radius: 14px;
     border: 1px solid rgba(255,255,255,0.08);
-    backdrop-filter: blur(12px);
+    /* backdrop-filter: blur removed */
     min-width: 140px;
 }
 
@@ -360,7 +360,7 @@ html, body {
     padding: 14px 22px;
     border-radius: 12px;
     border-left: 4px solid #ff6b8b;
-    backdrop-filter: blur(12px);
+    /* backdrop-filter: blur removed */
     min-width: 280px;
     text-align: center;
     pointer-events: none;
@@ -443,7 +443,7 @@ html, body {
     align-items: center;
     justify-content: center;
     transition: all 0.25s ease;
-    backdrop-filter: blur(12px);
+    /* backdrop-filter: blur removed */
 }
 
 .action-btn:hover {
@@ -459,7 +459,7 @@ html, body {
     border-radius: 14px;
     padding: 12px;
     border: 1px solid rgba(255,255,255,0.08);
-    backdrop-filter: blur(12px);
+    /* backdrop-filter: blur removed */
 }
 
 .map-container { position: relative; width: 140px; height: 140px; }
@@ -490,7 +490,7 @@ html, body {
     justify-content: center;
     align-items: center;
     background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(8px);
+    /* backdrop-filter: blur removed */
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s ease;
@@ -512,7 +512,7 @@ html, body {
     overflow: hidden;
     border: 1px solid rgba(255,255,255,0.08);
     box-shadow: 0 25px 60px rgba(0,0,0,0.6);
-    backdrop-filter: blur(20px);
+    /* backdrop-filter: blur removed */
     transform: translateY(30px) scale(0.97);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -813,7 +813,7 @@ html, body {
     font-size: 1.1rem;
     cursor: pointer;
     transition: all 0.2s;
-    backdrop-filter: blur(8px);
+    /* backdrop-filter: blur removed */
 }
 .gallery-controls button:hover {
     background: rgba(255,107,139,0.7);
@@ -931,7 +931,7 @@ html, body {
     max-width: 380px;
     border-left: 4px solid #ff6b8b;
     box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-    backdrop-filter: blur(12px);
+    /* backdrop-filter: blur removed */
     transform: translateX(120%);
     animation: notifSlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     transition: opacity 0.3s, transform 0.3s;
