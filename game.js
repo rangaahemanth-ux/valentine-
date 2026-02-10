@@ -39,7 +39,7 @@ class GameEngine {
             settings: {
                 graphics: 'high',
                 shadows: true,
-                bloom: true,
+                bloom: false,
                 masterVolume: 0.7,
                 musicVolume: 0.6,
                 sfxVolume: 0.8,
@@ -197,7 +197,7 @@ class GameEngine {
         const skyTex = new THREE.CanvasTexture(skyCanvas);
         skyTex.mapping = THREE.EquirectangularReflectionMapping;
         this.scene.background = skyTex;
-        this.scene.fog = new THREE.FogExp2(0x0a0a2e, 0.015);
+        this.scene.fog = new THREE.FogExp2(0x0a0a2e, 0.002);
     }
 
     // ═══════════════════════════════════════
