@@ -360,8 +360,7 @@ class GameEngine {
         const audio = document.createElement('audio');
         audio.loop = true;
         audio.volume = 0.4;
-        // ═══ PUT YOUR MUSIC FILE HERE ═══
-        // audio.src = 'assets/sounds/music.mp3';
+        audio.src = 'assets/sounds/Chinuku Take-SenSongsMp3.Co.mp3';
         this.systems.audio.musicElement = audio;
     }
 
@@ -492,17 +491,113 @@ class GameEngine {
     // BUILD WORLD
     // ═══════════════════════════════════════
     async buildWorld() {
+        // Initialize GLTF loader
+        this.gltfLoader = new THREE.GLTFLoader();
+        
+        // Load all GLB models in parallel
+        this.updateLoadingProgress(62, 'Loading 3D models...');
+        const modelPromises = {
+            room: this.loadModel('assets/models/japanese_style_room.glb'),
+            bonsai: this.loadModel('assets/models/cc0__youko_sakura_prunus_yoko.glb'),
+            tv: this.loadModel('assets/models/old_tv.glb'),
+            postbox: this.loadModel('assets/models/british_postbox.glb'),
+            lantern: this.loadModel('assets/models/spherical_japanese_paper_lantern.glb'),
+            cushion: this.loadModel('assets/models/sweetheart_cushion.glb'),
+            table: this.loadModel('assets/models/wizard_table.glb')
+        };
+        
+        // Wait for all models (with fallback if any fail)
+        this.loadedModels = {};
+        for (const [name, promise] of Object.entries(modelPromises)) {
+            try {
+                this.loadedModels[name] = await promise;
+                console.log(`✅ Loaded: ${name}`);
+            } catch (e) {
+                console.warn(`⚠️ Failed to load ${name}, using procedural fallback`);
+                this.loadedModels[name] = null;
+            }
+        }
+        
+        this.updateLoadingProgress(75, 'Building sanctuary...');
         await this.createJapaneseRoom();
         await this.createInteractiveObjects();
         this.createParticleSystems();
         this.createWeatherSystem();
+        
+        // Start music on first user interaction
+        document.addEventListener('click', () => {
+            if (!this.systems.audio.musicPlaying) this.playMusic();
+        }, { once: true });
+    }
+    
+    loadModel(url) {
+        return new Promise((resolve, reject) => {
+            this.gltfLoader.load(url, 
+                (gltf) => {
+                    // Enable shadows on all meshes
+                    gltf.scene.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+                    resolve(gltf.scene);
+                },
+                undefined,
+                (err) => reject(err)
+            );
+        });
     }
 
     async createJapaneseRoom() {
         const room = new THREE.Group();
         room.name = 'JapaneseRoom';
 
-        // ── FLOOR (tatami) ──
+        // Try loading the GLB room model
+        if (this.loadedModels.room) {
+            const glbRoom = this.loadedModels.room.clone();
+            // Auto-fit: find bounding box and scale/position accordingly
+            const box = new THREE.Box3().setFromObject(glbRoom);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+            
+            // Scale to fit ~20 units wide
+            const targetSize = 20;
+            const scale = targetSize / Math.max(size.x, size.z);
+            glbRoom.scale.setScalar(scale);
+            
+            // Recalculate after scaling
+            const scaledBox = new THREE.Box3().setFromObject(glbRoom);
+            const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
+            
+            // Center and put on ground
+            glbRoom.position.x -= scaledCenter.x;
+            glbRoom.position.z -= scaledCenter.z;
+            glbRoom.position.y -= scaledBox.min.y; // floor at y=0
+            
+            room.add(glbRoom);
+            console.log(`🏠 Room model loaded (scale: ${scale.toFixed(2)}, size: ${size.x.toFixed(1)}x${size.y.toFixed(1)}x${size.z.toFixed(1)})`);
+        } else {
+            // ── PROCEDURAL FALLBACK ──
+            this.createProceduralRoom(room);
+        }
+
+        // Always add invisible floor for physics/walking
+        const invisFloor = new THREE.Mesh(
+            new THREE.PlaneGeometry(40, 40),
+            new THREE.MeshBasicMaterial({ visible: false })
+        );
+        invisFloor.rotation.x = -Math.PI / 2;
+        invisFloor.position.y = 0;
+        room.add(invisFloor);
+
+        // Add furniture (table, cushions, lanterns — with GLB models)
+        this.addFurniture(room);
+        this.createTerrace(room);
+        this.scene.add(room);
+    }
+    
+    createProceduralRoom(room) {
         const floorGeo = new THREE.PlaneGeometry(20, 20, 1, 1);
         const floorCanvas = document.createElement('canvas');
         floorCanvas.width = 512; floorCanvas.height = 512;
@@ -579,11 +674,6 @@ class GameEngine {
             beam.castShadow = true;
             room.add(beam);
         }
-
-        // ── FURNITURE ──
-        this.addFurniture(room);
-        this.createTerrace(room);
-        this.scene.add(room);
     }
 
     addShojiGrid(wall) {
@@ -603,56 +693,73 @@ class GameEngine {
     }
 
     addFurniture(parent) {
-        // ── KOTATSU (heated table) ──
-        const woodMat = new THREE.MeshStandardMaterial({ color: 0x6d4c2a, roughness: 0.7 });
-        
-        // Table top
-        const tableTop = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.08, 2.4), woodMat);
-        tableTop.position.set(0, 0.45, -5);
-        tableTop.castShadow = true;
-        parent.add(tableTop);
-        
-        // Table legs
-        for (let x of [-1, 1]) {
-            for (let z of [-1, 1]) {
-                const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.45, 0.08), woodMat);
-                leg.position.set(x * 0.9, 0.22, -5 + z * 0.9);
-                leg.castShadow = true;
-                parent.add(leg);
+        // ── TABLE (wizard_table.glb) ──
+        if (this.loadedModels.table) {
+            const table = this.loadedModels.table.clone();
+            const box = new THREE.Box3().setFromObject(table);
+            const size = box.getSize(new THREE.Vector3());
+            const scale = 1.5 / Math.max(size.x, size.z); // fit to ~1.5m
+            table.scale.setScalar(scale);
+            table.position.set(0, 0, -5);
+            // Adjust Y to sit on floor
+            const scaledBox = new THREE.Box3().setFromObject(table);
+            table.position.y -= scaledBox.min.y;
+            parent.add(table);
+            console.log('🪑 Table model loaded');
+        } else {
+            // Procedural kotatsu fallback
+            const woodMat = new THREE.MeshStandardMaterial({ color: 0x6d4c2a, roughness: 0.7 });
+            const tableTop = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.08, 2.4), woodMat);
+            tableTop.position.set(0, 0.45, -5);
+            tableTop.castShadow = true;
+            parent.add(tableTop);
+            for (let x of [-1, 1]) {
+                for (let z of [-1, 1]) {
+                    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.45, 0.08), woodMat);
+                    leg.position.set(x * 0.9, 0.22, -5 + z * 0.9);
+                    leg.castShadow = true;
+                    parent.add(leg);
+                }
             }
         }
         
-        // Futon/blanket on kotatsu
-        const blanketMat = new THREE.MeshStandardMaterial({ color: 0xff6b8b, roughness: 0.9 });
-        const blanket = new THREE.Mesh(new THREE.BoxGeometry(3, 0.04, 3), blanketMat);
-        blanket.position.set(0, 0.48, -5);
-        blanket.castShadow = true;
-        parent.add(blanket);
+        // ── CUSHIONS (sweetheart_cushion.glb) ──
+        const cushionPositions = [[1.2, -4], [-1.2, -4], [1.2, -6], [-1.2, -6]];
+        if (this.loadedModels.cushion) {
+            cushionPositions.forEach(([x, z]) => {
+                const cushion = this.loadedModels.cushion.clone();
+                const box = new THREE.Box3().setFromObject(cushion);
+                const size = box.getSize(new THREE.Vector3());
+                const scale = 0.6 / Math.max(size.x, size.z);
+                cushion.scale.setScalar(scale);
+                cushion.position.set(x, 0, z);
+                const sb = new THREE.Box3().setFromObject(cushion);
+                cushion.position.y -= sb.min.y;
+                parent.add(cushion);
+            });
+            console.log('🪑 Cushion models loaded');
+        } else {
+            const cushionMat = new THREE.MeshStandardMaterial({ color: 0x7b1fa2, roughness: 0.85 });
+            cushionPositions.forEach(([x, z]) => {
+                const cushion = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.08, 0.65), cushionMat);
+                cushion.position.set(x, 0.04, z);
+                cushion.castShadow = true;
+                parent.add(cushion);
+            });
+        }
 
-        // ── ZABUTON (cushions) ──
-        const cushionMat = new THREE.MeshStandardMaterial({ color: 0x7b1fa2, roughness: 0.85 });
-        const cushionPositions = [[0.9, -4], [-0.9, -4], [0.9, -6], [-0.9, -6]];
-        cushionPositions.forEach(([x, z]) => {
-            const cushion = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.08, 0.65), cushionMat);
-            cushion.position.set(x, 0.04, z);
-            cushion.castShadow = true;
-            parent.add(cushion);
-        });
-
-        // ── TOKONOMA (display alcove) ──
+        // ── TOKONOMA (display alcove) — keep procedural ──
         const platformMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.6 });
         const platform = new THREE.Mesh(new THREE.BoxGeometry(4, 0.15, 2), platformMat);
         platform.position.set(-7, 0.075, -8.5);
         platform.castShadow = true;
         parent.add(platform);
         
-        // Scroll painting
         const scrollMat = new THREE.MeshStandardMaterial({ color: 0xfff8e1, side: THREE.DoubleSide });
         const scroll = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 2.5), scrollMat);
         scroll.position.set(-7, 2.5, -9.8);
         parent.add(scroll);
         
-        // Scroll decorative border
         const borderMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
         const topRoll = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2, 12), borderMat);
         topRoll.rotation.z = Math.PI / 2;
@@ -663,12 +770,13 @@ class GameEngine {
         btmRoll.position.set(-7, 1.2, -9.8);
         parent.add(btmRoll);
 
-        // ── IKEBANA (flower arrangement) ──
+        // ── IKEBANA ──
         this.createIkebana(parent, -7, 0.2, -8.5);
 
-        // ── PAPER LANTERNS (hanging) ──
-        this.createPaperLantern(parent, -3, 4.5, -3, 0xff6b8b);
-        this.createPaperLantern(parent, 3, 4.5, -7, 0xffcc00);
+        // ── PAPER LANTERNS (spherical_japanese_paper_lantern.glb) ──
+        this.createPaperLantern(parent, -3, 4.0, -3, 0xff6b8b);
+        this.createPaperLantern(parent, 3, 4.0, -7, 0xffcc00);
+        this.createPaperLantern(parent, 0, 4.2, -8, 0xff8e53);
     }
 
     createIkebana(parent, x, y, z) {
@@ -716,25 +824,44 @@ class GameEngine {
 
     createPaperLantern(parent, x, y, z, color) {
         const group = new THREE.Group();
-        const mat = new THREE.MeshStandardMaterial({
-            color, emissive: color, emissiveIntensity: 0.3,
-            transparent: true, opacity: 0.85
-        });
         
-        // Lantern body (sphere)
-        const body = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 12), mat);
-        body.scale.y = 1.4;
-        body.castShadow = true;
-        group.add(body);
-        
-        // Top/bottom caps
-        const capMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
-        const topCap = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.15, 0.08, 12), capMat);
-        topCap.position.y = 0.52;
-        group.add(topCap);
-        const btmCap = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.08, 0.08, 12), capMat);
-        btmCap.position.y = -0.52;
-        group.add(btmCap);
+        if (this.loadedModels.lantern) {
+            const lantern = this.loadedModels.lantern.clone();
+            const box = new THREE.Box3().setFromObject(lantern);
+            const size = box.getSize(new THREE.Vector3());
+            const scale = 0.7 / Math.max(size.x, size.y, size.z);
+            lantern.scale.setScalar(scale);
+            // Center it
+            const sb = new THREE.Box3().setFromObject(lantern);
+            const center = sb.getCenter(new THREE.Vector3());
+            lantern.position.sub(center);
+            // Tint emissive
+            lantern.traverse(child => {
+                if (child.isMesh && child.material) {
+                    child.material = child.material.clone();
+                    child.material.emissive = new THREE.Color(color);
+                    child.material.emissiveIntensity = 0.25;
+                }
+            });
+            group.add(lantern);
+        } else {
+            // Procedural fallback
+            const mat = new THREE.MeshStandardMaterial({
+                color, emissive: color, emissiveIntensity: 0.3,
+                transparent: true, opacity: 0.85
+            });
+            const body = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 12), mat);
+            body.scale.y = 1.4;
+            body.castShadow = true;
+            group.add(body);
+            const capMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+            const topCap = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.15, 0.08, 12), capMat);
+            topCap.position.y = 0.52;
+            group.add(topCap);
+            const btmCap = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.08, 0.08, 12), capMat);
+            btmCap.position.y = -0.52;
+            group.add(btmCap);
+        }
         
         // String
         const string = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 1.5, 4),
@@ -887,67 +1014,39 @@ class GameEngine {
         const group = new THREE.Group();
         group.name = 'Bonsai';
 
-        // ═══ MODEL SLOT: Replace with your own GLB ═══
-        // const loader = new THREE.GLTFLoader();
-        // loader.load('assets/models/bonsai.glb', (gltf) => {
-        //     group.add(gltf.scene);
-        // });
-
-        // Procedural bonsai
-        // Pot
-        const potMat = new THREE.MeshStandardMaterial({ color: 0x795548, roughness: 0.6 });
-        const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.25, 0.3, 16), potMat);
-        pot.castShadow = true;
-        group.add(pot);
-        // Soil
-        const soil = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.05, 16),
-            new THREE.MeshStandardMaterial({ color: 0x3e2723 }));
-        soil.position.y = 0.15;
-        group.add(soil);
-
-        // Trunk
-        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.1, 0.8, 8), trunkMat);
-        trunk.position.y = 0.55;
-        trunk.rotation.z = 0.1;
-        trunk.castShadow = true;
-        group.add(trunk);
-
-        // Branch
-        const branch = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.05, 0.4, 6), trunkMat);
-        branch.position.set(0.15, 0.85, 0);
-        branch.rotation.z = -Math.PI / 3;
-        branch.castShadow = true;
-        group.add(branch);
-
-        // Foliage clusters
-        const foliageMat = new THREE.MeshStandardMaterial({
-            color: 0x2e7d32, emissive: 0x1b5e20, emissiveIntensity: 0.05
-        });
-        const foliagePositions = [
-            [0, 1.05, 0, 0.25], [-0.15, 0.95, 0.1, 0.18],
-            [0.2, 0.9, -0.05, 0.15], [0.3, 0.8, 0.1, 0.12]
-        ];
-        foliagePositions.forEach(([fx, fy, fz, fr]) => {
-            const cluster = new THREE.Mesh(new THREE.SphereGeometry(fr, 12, 8), foliageMat);
-            cluster.position.set(fx, fy, fz);
-            cluster.scale.y = 0.7;
-            cluster.castShadow = true;
-            group.add(cluster);
-        });
-
-        // Tiny flowers
-        const flowerMat = new THREE.MeshStandardMaterial({
-            color: 0xff6b8b, emissive: 0xff6b8b, emissiveIntensity: 0.3
-        });
-        for (let i = 0; i < 8; i++) {
-            const flower = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), flowerMat);
-            flower.position.set(
-                (Math.random() - 0.5) * 0.4,
-                0.85 + Math.random() * 0.25,
-                (Math.random() - 0.5) * 0.3
-            );
-            group.add(flower);
+        if (this.loadedModels.bonsai) {
+            const bonsai = this.loadedModels.bonsai.clone();
+            const box = new THREE.Box3().setFromObject(bonsai);
+            const size = box.getSize(new THREE.Vector3());
+            const scale = 1.2 / Math.max(size.x, size.y, size.z);
+            bonsai.scale.setScalar(scale);
+            const sb = new THREE.Box3().setFromObject(bonsai);
+            bonsai.position.y -= sb.min.y;
+            const center = sb.getCenter(new THREE.Vector3());
+            bonsai.position.x -= center.x;
+            bonsai.position.z -= center.z;
+            group.add(bonsai);
+            console.log('🌸 Sakura bonsai model loaded');
+        } else {
+            // Procedural fallback
+            const potMat = new THREE.MeshStandardMaterial({ color: 0x795548, roughness: 0.6 });
+            const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.25, 0.3, 16), potMat);
+            pot.castShadow = true;
+            group.add(pot);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.1, 0.8, 8), trunkMat);
+            trunk.position.y = 0.55; trunk.rotation.z = 0.1; trunk.castShadow = true;
+            group.add(trunk);
+            const foliageMat = new THREE.MeshStandardMaterial({ color: 0x2e7d32 });
+            const foliage = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 8), foliageMat);
+            foliage.position.y = 1.05; foliage.scale.y = 0.7; foliage.castShadow = true;
+            group.add(foliage);
+            const flowerMat = new THREE.MeshStandardMaterial({ color: 0xff6b8b, emissive: 0xff6b8b, emissiveIntensity: 0.3 });
+            for (let i = 0; i < 8; i++) {
+                const flower = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), flowerMat);
+                flower.position.set((Math.random()-0.5)*0.4, 0.85+Math.random()*0.25, (Math.random()-0.5)*0.3);
+                group.add(flower);
+            }
         }
 
         group.position.set(4, 0.6, -8);
@@ -957,7 +1056,6 @@ class GameEngine {
             description: 'Water it daily and watch it grow!'
         };
         
-        // Gentle rotation animation
         this.animations.push({
             update: () => {
                 group.rotation.y = Math.sin(Date.now() * 0.0003) * 0.05;
@@ -972,35 +1070,41 @@ class GameEngine {
         const group = new THREE.Group();
         group.name = 'MemoryTV';
 
-        // ═══ MODEL SLOT: Replace with your own GLB ═══
-        // TV frame
-        const frameMat = new THREE.MeshStandardMaterial({ color: 0x212121, roughness: 0.3, metalness: 0.8 });
-        const frame = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.6, 0.1), frameMat);
-        frame.castShadow = true;
-        group.add(frame);
+        if (this.loadedModels.tv) {
+            const tv = this.loadedModels.tv.clone();
+            const box = new THREE.Box3().setFromObject(tv);
+            const size = box.getSize(new THREE.Vector3());
+            const scale = 1.8 / Math.max(size.x, size.y, size.z);
+            tv.scale.setScalar(scale);
+            const sb = new THREE.Box3().setFromObject(tv);
+            tv.position.y -= sb.min.y;
+            const center = sb.getCenter(new THREE.Vector3());
+            tv.position.x -= center.x;
+            tv.position.z -= center.z;
+            group.add(tv);
+            console.log('📺 TV model loaded');
+        } else {
+            // Procedural fallback
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0x212121, roughness: 0.3, metalness: 0.8 });
+            const frame = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.6, 0.1), frameMat);
+            frame.castShadow = true;
+            group.add(frame);
+            const screenMat = new THREE.MeshStandardMaterial({ color: 0x1a237e, emissive: 0x283593, emissiveIntensity: 0.5 });
+            const screen = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 1.3), screenMat);
+            screen.position.z = 0.06;
+            group.add(screen);
+            const stand = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 0.4),
+                new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.6 }));
+            stand.position.y = -1.2; stand.castShadow = true;
+            group.add(stand);
+        }
 
-        // Screen (emissive)
-        const screenMat = new THREE.MeshStandardMaterial({
-            color: 0x1a237e, emissive: 0x283593, emissiveIntensity: 0.5,
-            roughness: 0.1, metalness: 0.3
-        });
-        const screen = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 1.3), screenMat);
-        screen.position.z = 0.06;
-        group.add(screen);
-
-        // Screen glow
+        // Screen glow (always add)
         const tvGlow = new THREE.PointLight(0x5c6bc0, 0.5, 5);
-        tvGlow.position.set(0, 0, 0.5);
+        tvGlow.position.set(0, 0.5, 0.5);
         group.add(tvGlow);
 
-        // Stand
-        const standMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.6 });
-        const stand = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 0.4), standMat);
-        stand.position.y = -1.2;
-        stand.castShadow = true;
-        group.add(stand);
-
-        group.position.set(-5, 2.2, -9.5);
+        group.position.set(-5, 0.0, -9.0);
         group.userData = {
             interactive: true, type: 'tv',
             name: 'Memory Gallery 📺',
@@ -1015,44 +1119,44 @@ class GameEngine {
         const group = new THREE.Group();
         group.name = 'Postbox';
 
-        // ═══ MODEL SLOT: Replace with your own GLB ═══
-        // Body
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xc62828, roughness: 0.5 });
-        const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.4), bodyMat);
-        body.castShadow = true;
-        group.add(body);
+        if (this.loadedModels.postbox) {
+            const postbox = this.loadedModels.postbox.clone();
+            const box = new THREE.Box3().setFromObject(postbox);
+            const size = box.getSize(new THREE.Vector3());
+            const scale = 1.4 / Math.max(size.x, size.y, size.z);
+            postbox.scale.setScalar(scale);
+            const sb = new THREE.Box3().setFromObject(postbox);
+            postbox.position.y -= sb.min.y;
+            const center = sb.getCenter(new THREE.Vector3());
+            postbox.position.x -= center.x;
+            postbox.position.z -= center.z;
+            group.add(postbox);
+            console.log('📮 Postbox model loaded');
+        } else {
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xc62828, roughness: 0.5 });
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.4), bodyMat);
+            body.castShadow = true;
+            group.add(body);
+            const topMat = new THREE.MeshStandardMaterial({ color: 0xb71c1c, roughness: 0.5 });
+            const top = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.15, 16, 1, false, 0, Math.PI), topMat);
+            top.rotation.z = Math.PI / 2; top.rotation.y = Math.PI / 2; top.position.y = 0.45;
+            group.add(top);
+            const slotMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
+            const slot = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.04, 0.05), slotMat);
+            slot.position.set(0, 0.2, 0.22);
+            group.add(slot);
+            const postMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+            const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.6, 8), postMat);
+            post.position.y = -0.7; post.castShadow = true;
+            group.add(post);
+        }
 
-        // Rounded top
-        const topMat = new THREE.MeshStandardMaterial({ color: 0xb71c1c, roughness: 0.5 });
-        const top = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.15, 16, 1, false, 0, Math.PI), topMat);
-        top.rotation.z = Math.PI / 2;
-        top.rotation.y = Math.PI / 2;
-        top.position.y = 0.45;
-        top.castShadow = true;
-        group.add(top);
+        // Heart glow above postbox
+        const heartLight = new THREE.PointLight(0xff6b8b, 0.4, 4);
+        heartLight.position.set(0, 1.5, 0);
+        group.add(heartLight);
 
-        // Letter slot
-        const slotMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
-        const slot = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.04, 0.05), slotMat);
-        slot.position.set(0, 0.2, 0.22);
-        group.add(slot);
-
-        // Heart decoration
-        const heartMat = new THREE.MeshStandardMaterial({
-            color: 0xffcc00, emissive: 0xffcc00, emissiveIntensity: 0.2, metalness: 0.5
-        });
-        const heart = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), heartMat);
-        heart.position.set(0, 0.05, 0.22);
-        group.add(heart);
-
-        // Post
-        const postMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
-        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.6, 8), postMat);
-        post.position.y = -0.7;
-        post.castShadow = true;
-        group.add(post);
-
-        group.position.set(7, 1.0, -7);
+        group.position.set(7, 0.0, -7);
         group.userData = {
             interactive: true, type: 'postbox',
             name: 'Love Letter Box 💌',
@@ -1067,7 +1171,7 @@ class GameEngine {
         const group = new THREE.Group();
         group.name = 'TeaSet';
 
-        // ═══ MODEL SLOT: Replace with your own GLB ═══
+        // Procedural tea set (no GLB model for this one)
         const ceramicMat = new THREE.MeshStandardMaterial({ color: 0xefebe9, roughness: 0.4 });
         const darkMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.5 });
 
