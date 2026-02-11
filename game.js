@@ -1,10 +1,14 @@
 // ✅ FIXED VERSION - Safe Anti-Blur Patch
-console.log("✅ Game.js v3 - Models should load now!");
+console.log("✅ Game.js v4 - Loading models from GitHub Releases");
 
 // Tanmai's Sanctuary - Core Game Engine (FIXED & COMPLETE)
 // A production-grade 3D interactive experience
 
 class GameEngine {
+    // 🌐 Models hosted on GitHub Releases (too large for Vercel)
+    // After creating release, update this URL with your username and tag
+    GITHUB_MODELS_URL = 'https://github.com/rangaahemanth-ux/valentine/releases/download/models-v1.0/';
+
     constructor() {
         this.scene = null;
         this.camera = null;
@@ -489,13 +493,13 @@ class GameEngine {
         // Load all GLB models in parallel
         this.updateLoadingProgress(62, 'Loading 3D models...');
         const modelPromises = {
-            room: this.loadModel('assets/models/japanese_style_room.glb'),
-            bonsai: this.loadModel('assets/models/cc0_youko_sakura_prunus_yoko.glb'),
-            tv: this.loadModel('assets/models/old_tv.glb'),
-            postbox: this.loadModel('assets/models/british_postbox.glb'),
-            lantern: this.loadModel('assets/models/spherical_japanese_paper_lantern.glb'),
-            cushion: this.loadModel('assets/models/sweetheart_cushion.glb'),
-            table: this.loadModel('assets/models/wizard_table.glb')
+            room: this.loadModel(this.GITHUB_MODELS_URL + 'japanese_style_room.glb'),
+            bonsai: this.loadModel(this.GITHUB_MODELS_URL + 'cc0_youko_sakura_prunus_yoko.glb'),
+            tv: this.loadModel(this.GITHUB_MODELS_URL + 'old_tv.glb'),
+            postbox: this.loadModel(this.GITHUB_MODELS_URL + 'british_postbox.glb'),
+            lantern: this.loadModel(this.GITHUB_MODELS_URL + 'spherical_japanese_paper_lantern.glb'),
+            cushion: this.loadModel(this.GITHUB_MODELS_URL + 'sweetheart_cushion.glb'),
+            table: this.loadModel(this.GITHUB_MODELS_URL + 'wizard_table.glb')
         };
         
         // Wait for all models (with fallback if any fail)
