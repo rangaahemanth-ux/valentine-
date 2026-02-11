@@ -506,13 +506,13 @@ class GameEngine {
         this.gltfLoader = new THREE.GLTFLoader();
         
         const manifest = {
-            room:    'assets/models/japanese_style_room.glb',
-            bonsai:  'assets/models/cc0__youko_sakura_prunus_yoko.glb',
-            tv:      'assets/models/old_tv.glb',
-            postbox: 'assets/models/british_postbox.glb',
-            lantern: 'assets/models/spherical_japanese_paper_lantern.glb',
-            cushion: 'assets/models/sweetheart_cushion.glb',
-            table:   'assets/models/wizard_table.glb'
+            room:    'public/assets/models/japanese_style_room.glb',
+            bonsai:  'public/assets/models/cc0__youko_sakura_prunus_yoko.glb',
+            tv:      'public/assets/models/old_tv.glb',
+            postbox: 'public/assets/models/british_postbox.glb',
+            lantern: 'public/assets/models/spherical_japanese_paper_lantern.glb',
+            cushion: 'public/assets/models/sweetheart_cushion.glb',
+            table:   'public/assets/models/wizard_table.glb'
         };
 
         const total = Object.keys(manifest).length;
@@ -953,7 +953,7 @@ class GameEngine {
         this.music = {
             audio: new Audio(),
             tracks: [
-                { name: 'Chinuku Take', artist: 'SenSongs', file: 'assets/sounds/Chinuku Take-SenSongsMp3.Co.mp3' }
+                { name: 'Chinuku Take', artist: 'SenSongs', file: 'public/assets/sounds/Chinuku Take-SenSongsMp3.Co.mp3' }
             ],
             current: 0,
             playing: false,
