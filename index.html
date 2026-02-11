@@ -3,342 +3,246 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tanmai's Sanctuary - Interactive 3D Experience</title>
+    <title>Tanmai's Sanctuary ✦ An Interactive Love Letter</title>
+    <meta name="description" content="A 3D interactive love letter experience">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    
-    <!-- Three.js core + post-processing -->
+
+    <!-- Three.js r128 (stable) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Post-processing -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
-    <!-- GLTFLoader for when you add your own 3D models -->
+    <!-- GLTF Loader -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
-    <!-- Loading Screen -->
+    <!-- ══════════ LOADING SCREEN ══════════ -->
     <div id="loading-screen">
         <div class="loader-container">
             <div class="loader">
-                <div class="loader-spinner"></div>
-                <div class="loader-text">Loading Tanmai's Sanctuary...</div>
+                <div class="loader-sakura">
+                    <span>🌸</span><span>✦</span><span>🌸</span>
+                </div>
+                <h1 class="loader-title">Tanmai's Sanctuary</h1>
+                <p class="loader-subtitle">Preparing your world...</p>
                 <div class="loader-progress">
-                    <div class="loader-bar"></div>
+                    <div class="loader-bar" id="load-bar"></div>
                 </div>
                 <div class="loader-details">
-                    <div class="loader-asset">Initializing 3D Engine...</div>
-                    <div class="loader-percentage">0%</div>
+                    <span class="loader-asset" id="load-asset">Initializing...</span>
+                    <span class="loader-percentage" id="load-pct">0%</span>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Main Game Container -->
+
+    <!-- ══════════ GAME CONTAINER ══════════ -->
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
-        
-        <div id="game-ui">
-            <!-- ═══════════ MAIN MENU ═══════════ -->
-            <div id="main-menu" class="ui-panel">
-                <div class="title-container">
+
+        <!-- ══════ MAIN MENU ══════ -->
+        <div id="main-menu" class="overlay-panel">
+            <div class="menu-inner">
+                <div class="menu-header">
+                    <div class="title-sakura"><span>🌸</span><span>✦</span><span>🌸</span></div>
                     <h1 class="game-title">Tanmai's Sanctuary</h1>
-                    <h2 class="game-subtitle">An Interactive Love Letter</h2>
-                    <div class="title-decoration">
-                        <div class="sakura"></div>
-                        <div class="sakura"></div>
-                        <div class="sakura"></div>
-                    </div>
+                    <p class="game-subtitle">An Interactive Love Letter</p>
                 </div>
-                
-                <div class="menu-options">
-                    <button id="start-game" class="menu-btn primary">
-                        <i class="fas fa-play"></i> Start Experience
-                    </button>
-                    <button id="load-game" class="menu-btn secondary">
-                        <i class="fas fa-folder-open"></i> Continue Journey
-                    </button>
-                    <button id="settings-btn" class="menu-btn tertiary">
-                        <i class="fas fa-cog"></i> Settings
-                    </button>
-                    <button id="about-btn" class="menu-btn tertiary">
-                        <i class="fas fa-heart"></i> About This Project
-                    </button>
+                <div class="menu-buttons">
+                    <button id="btn-start" class="btn btn-primary"><i class="fas fa-play"></i> Enter the Sanctuary</button>
+                    <button id="btn-continue" class="btn btn-secondary"><i class="fas fa-bookmark"></i> Continue Journey</button>
                 </div>
-                
-                <div class="menu-footer">
-                    <div class="controls-hint">
-                        <div class="control-item">
-                            <span class="key">WASD</span>
-                            <span class="label">Move</span>
-                        </div>
-                        <div class="control-item">
-                            <span class="key">MOUSE</span>
-                            <span class="label">Look</span>
-                        </div>
-                        <div class="control-item">
-                            <span class="key">E</span>
-                            <span class="label">Interact</span>
-                        </div>
-                        <div class="control-item">
-                            <span class="key">SPACE</span>
-                            <span class="label">Jump</span>
-                        </div>
-                        <div class="control-item">
-                            <span class="key">ESC</span>
-                            <span class="label">Menu</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- ═══════════ IN-GAME HUD ═══════════ -->
-            <div id="game-hud" class="ui-panel hidden">
-                <div class="hud-top">
-                    <div class="time-display">
-                        <div class="time-icon"><i class="fas fa-clock"></i></div>
-                        <div class="time-info">
-                            <div id="current-time" class="time">12:00 PM</div>
-                            <div id="current-date" class="date">Monday, January 1</div>
-                        </div>
-                    </div>
-                    
-                    <div class="player-stats">
-                        <div class="stat" id="stat-plant">
-                            <div class="stat-icon"><i class="fas fa-seedling"></i></div>
-                            <div class="stat-info">
-                                <div class="stat-name">Love Plant</div>
-                                <div class="stat-value">Day <span id="plant-day">1</span></div>
-                            </div>
-                        </div>
-                        <div class="stat" id="stat-letters">
-                            <div class="stat-icon"><i class="fas fa-envelope"></i></div>
-                            <div class="stat-info">
-                                <div class="stat-name">Letters</div>
-                                <div class="stat-value"><span id="letters-count">0</span></div>
-                            </div>
-                        </div>
-                        <div class="stat" id="stat-memories">
-                            <div class="stat-icon"><i class="fas fa-images"></i></div>
-                            <div class="stat-info">
-                                <div class="stat-name">Memories</div>
-                                <div class="stat-value"><span id="memories-count">0</span></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Interaction Hint -->
-                <div id="interaction-hint" class="interaction-hint">
-                    <div class="hint-content">
-                        <span class="hint-key">[E]</span>
-                        <span class="hint-text"></span>
-                    </div>
-                </div>
-                
-                <!-- Crosshair -->
-                <div id="crosshair" class="crosshair">
-                    <div class="crosshair-dot"></div>
-                    <div class="crosshair-ring"></div>
-                </div>
-                
-                <!-- Bottom Action Bar -->
-                <div class="hud-bottom">
-                    <div class="quick-actions">
-                        <button class="action-btn" id="action-plant" data-tooltip="Water Plant">
-                            <i class="fas fa-tint"></i>
-                        </button>
-                        <button class="action-btn" id="action-letter" data-tooltip="Write Letter">
-                            <i class="fas fa-feather-alt"></i>
-                        </button>
-                        <button class="action-btn" id="action-camera" data-tooltip="Take Photo">
-                            <i class="fas fa-camera"></i>
-                        </button>
-                        <button class="action-btn" id="action-music" data-tooltip="Music">
-                            <i class="fas fa-music"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="mini-map" id="mini-map">
-                        <div class="map-container">
-                            <canvas id="map-canvas" width="150" height="150"></canvas>
-                            <div class="player-marker"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- ═══════════ PAUSE MENU ═══════════ -->
-            <div id="pause-menu" class="ui-panel hidden">
-                <h2 class="menu-title">Game Paused</h2>
-                <div class="menu-options">
-                    <button id="resume-game" class="menu-btn primary">
-                        <i class="fas fa-play"></i> Resume
-                    </button>
-                    <button id="save-game" class="menu-btn secondary">
-                        <i class="fas fa-save"></i> Save Journey
-                    </button>
-                    <button id="quit-game" class="menu-btn danger">
-                        <i class="fas fa-home"></i> Main Menu
-                    </button>
-                </div>
-            </div>
-            
-            <!-- ═══════════ SETTINGS PANEL ═══════════ -->
-            <div id="settings-panel" class="ui-panel hidden">
-                <h2 class="menu-title">Settings</h2>
-                <div class="settings-content">
-                    <div class="settings-section">
-                        <h3><i class="fas fa-sliders-h"></i> Graphics</h3>
-                        <div class="setting">
-                            <label for="graphics-quality">Quality Preset</label>
-                            <select id="graphics-quality">
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high" selected>High</option>
-                                <option value="ultra">Ultra</option>
-                            </select>
-                        </div>
-                        <div class="setting">
-                            <label><input type="checkbox" id="bloom-effect" checked> Bloom Effect</label>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-section">
-                        <h3><i class="fas fa-volume-up"></i> Audio</h3>
-                        <div class="setting">
-                            <label for="master-volume">Master Volume</label>
-                            <input type="range" id="master-volume" min="0" max="100" value="70">
-                        </div>
-                        <div class="setting">
-                            <label for="music-volume">Music Volume</label>
-                            <input type="range" id="music-volume" min="0" max="100" value="60">
-                        </div>
-                        <div class="setting">
-                            <label for="sfx-volume">SFX Volume</label>
-                            <input type="range" id="sfx-volume" min="0" max="100" value="80">
-                        </div>
-                    </div>
-                    
-                    <div class="settings-section">
-                        <h3><i class="fas fa-gamepad"></i> Controls</h3>
-                        <div class="setting">
-                            <label for="mouse-sensitivity">Mouse Sensitivity</label>
-                            <input type="range" id="mouse-sensitivity" min="1" max="10" value="5">
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="settings-footer">
-                    <button id="back-settings" class="menu-btn secondary">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </button>
+                <div class="menu-controls">
+                    <div class="ctrl"><kbd>WASD</kbd> Move</div>
+                    <div class="ctrl"><kbd>Mouse</kbd> Look</div>
+                    <div class="ctrl"><kbd>E</kbd> Interact</div>
+                    <div class="ctrl"><kbd>Space</kbd> Jump</div>
+                    <div class="ctrl"><kbd>ESC</kbd> Pause</div>
                 </div>
             </div>
         </div>
-        
-        <!-- ═══════════ MODALS ═══════════ -->
-        
-        <!-- Letter Modal -->
-        <div id="letter-modal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2><i class="fas fa-envelope-open-text"></i> Letters for Tanmai</h2>
-                    <button class="modal-close">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="letters-container" id="letters-container"></div>
-                    <div class="write-letter">
-                        <h3>Write a New Letter</h3>
-                        <textarea id="new-letter-content" placeholder="Write your heart out..."></textarea>
-                        <button id="send-letter" class="btn-primary">
-                            <i class="fas fa-paper-plane"></i> Send Letter
-                        </button>
-                    </div>
+
+        <!-- ══════ PAUSE MENU ══════ -->
+        <div id="pause-menu" class="overlay-panel hidden">
+            <div class="menu-inner compact">
+                <h2 class="pause-title">Paused</h2>
+                <div class="menu-buttons">
+                    <button id="btn-resume" class="btn btn-primary"><i class="fas fa-play"></i> Resume</button>
+                    <button id="btn-save" class="btn btn-secondary"><i class="fas fa-save"></i> Save</button>
+                    <button id="btn-quit" class="btn btn-danger"><i class="fas fa-home"></i> Main Menu</button>
                 </div>
             </div>
         </div>
-        
+
+        <!-- ══════ IN-GAME HUD ══════ -->
+        <div id="hud" class="hidden">
+            <!-- Top bar -->
+            <div class="hud-top">
+                <div class="hud-time">
+                    <i class="fas fa-moon"></i>
+                    <div>
+                        <div id="hud-clock" class="hud-clock">12:00 AM</div>
+                        <div id="hud-date" class="hud-date">Monday, Jan 1</div>
+                    </div>
+                </div>
+                <div class="hud-stats">
+                    <div class="hud-stat"><i class="fas fa-seedling" style="color:#66bb6a"></i> Day <span id="hud-plant-day">1</span></div>
+                    <div class="hud-stat"><i class="fas fa-envelope" style="color:#ff6b8b"></i> <span id="hud-letters">0</span></div>
+                    <div class="hud-stat"><i class="fas fa-camera" style="color:#ce93d8"></i> <span id="hud-photos">0</span></div>
+                </div>
+            </div>
+
+            <!-- Crosshair -->
+            <div class="crosshair">
+                <div class="crosshair-dot"></div>
+                <div class="crosshair-ring"></div>
+            </div>
+
+            <!-- Interaction hint -->
+            <div id="interact-hint" class="interact-hint">
+                <kbd>E</kbd> <span id="interact-text"></span>
+            </div>
+
+            <!-- Bottom bar -->
+            <div class="hud-bottom">
+                <div class="hud-actions">
+                    <button class="act-btn" id="act-water" title="Water Plant"><i class="fas fa-tint"></i></button>
+                    <button class="act-btn" id="act-letter" title="Letters"><i class="fas fa-feather-alt"></i></button>
+                    <button class="act-btn" id="act-photo" title="Photo"><i class="fas fa-camera"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════ MUSIC PLAYER BAR ══════ -->
+        <div id="music-player" class="music-player">
+            <div class="mp-left">
+                <div class="mp-art">🎵</div>
+                <div class="mp-info">
+                    <div class="mp-title" id="mp-title">No track loaded</div>
+                    <div class="mp-artist" id="mp-artist">—</div>
+                </div>
+            </div>
+            <div class="mp-center">
+                <div class="mp-controls">
+                    <button class="mp-btn" id="mp-prev"><i class="fas fa-backward"></i></button>
+                    <button class="mp-btn mp-play" id="mp-play"><i class="fas fa-play"></i></button>
+                    <button class="mp-btn" id="mp-next"><i class="fas fa-forward"></i></button>
+                </div>
+                <div class="mp-progress-row">
+                    <span class="mp-time" id="mp-elapsed">0:00</span>
+                    <div class="mp-progress" id="mp-progress-bar">
+                        <div class="mp-progress-fill" id="mp-fill"></div>
+                        <div class="mp-progress-thumb" id="mp-thumb"></div>
+                    </div>
+                    <span class="mp-time" id="mp-duration">0:00</span>
+                </div>
+            </div>
+            <div class="mp-right">
+                <button class="mp-btn mp-small" id="mp-shuffle"><i class="fas fa-random"></i></button>
+                <button class="mp-btn mp-small" id="mp-repeat"><i class="fas fa-redo"></i></button>
+                <div class="mp-volume">
+                    <i class="fas fa-volume-up" id="mp-vol-icon"></i>
+                    <input type="range" id="mp-volume" min="0" max="100" value="60" class="mp-vol-slider">
+                </div>
+                <button class="mp-btn mp-small" id="mp-list-toggle"><i class="fas fa-list"></i></button>
+            </div>
+            <!-- Track List Dropdown -->
+            <div id="mp-tracklist" class="mp-tracklist hidden">
+                <h4>🎶 Playlist</h4>
+                <div id="mp-tracks"></div>
+            </div>
+        </div>
+
+        <!-- ══════ MODALS ══════ -->
         <!-- Plant Modal -->
-        <div id="plant-modal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2><i class="fas fa-spa"></i> Our Love Plant</h2>
-                    <button class="modal-close">&times;</button>
+        <div id="modal-plant" class="modal">
+            <div class="modal-box">
+                <div class="modal-head">
+                    <h2>🌸 Our Love Plant</h2>
+                    <button class="modal-x" data-close>&times;</button>
                 </div>
                 <div class="modal-body">
-                    <div class="plant-status">
+                    <div class="plant-grid">
                         <div class="plant-visual">
-                            <div class="plant-stage" id="plant-visual">
-                                <div class="plant-pot"></div>
-                                <div class="plant-stem"></div>
-                                <div class="plant-leaves"></div>
-                                <div class="plant-flower"></div>
-                            </div>
+                            <div class="plant-pot-ui"></div>
+                            <div class="plant-stem-ui"></div>
+                            <div class="plant-canopy-ui"></div>
+                            <div class="plant-bloom-ui"></div>
                         </div>
-                        <div class="plant-info">
-                            <h3>Bonsai of Love</h3>
-                            <p>This plant grows with our love. Water it daily and watch it blossom!</p>
-                            <div class="plant-stats">
-                                <div class="plant-stat">
-                                    <div class="stat-label">Health</div>
-                                    <div class="stat-bar"><div class="stat-fill" id="plant-health-bar" style="width: 85%"></div></div>
-                                    <div class="stat-value" id="plant-health">85%</div>
-                                </div>
-                                <div class="plant-stat">
-                                    <div class="stat-label">Growth</div>
-                                    <div class="stat-bar"><div class="stat-fill growth-fill" id="plant-growth-bar" style="width: 30%"></div></div>
-                                    <div class="stat-value" id="plant-growth">30%</div>
-                                </div>
-                                <div class="plant-stat">
-                                    <div class="stat-label">Days Alive</div>
-                                    <div class="stat-value-large" id="plant-days">1</div>
-                                </div>
+                        <div class="plant-details">
+                            <h3>Cherry Blossom Bonsai</h3>
+                            <p>This plant grows with our love. Water it daily!</p>
+                            <div class="bar-group">
+                                <label>Health</label>
+                                <div class="bar"><div class="bar-fill green" id="bar-health" style="width:85%"></div></div>
+                                <span id="val-health">85%</span>
                             </div>
-                            <div class="plant-actions">
-                                <button id="water-plant" class="btn-primary"><i class="fas fa-tint"></i> Water Plant</button>
-                                <button id="fertilize-plant" class="btn-secondary"><i class="fas fa-leaf"></i> Add Fertilizer</button>
+                            <div class="bar-group">
+                                <label>Growth</label>
+                                <div class="bar"><div class="bar-fill pink" id="bar-growth" style="width:30%"></div></div>
+                                <span id="val-growth">30%</span>
+                            </div>
+                            <div class="bar-group">
+                                <label>Days Alive</label>
+                                <span class="big-num" id="val-days">1</span>
+                            </div>
+                            <div class="plant-btns">
+                                <button class="btn btn-primary" id="btn-water"><i class="fas fa-tint"></i> Water</button>
+                                <button class="btn btn-secondary" id="btn-fert"><i class="fas fa-leaf"></i> Fertilize</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <!-- TV / Memory Gallery Modal -->
-        <div id="tv-modal" class="modal">
-            <div class="modal-content wide">
-                <div class="modal-header">
-                    <h2><i class="fas fa-tv"></i> Memory Gallery</h2>
-                    <button class="modal-close">&times;</button>
+
+        <!-- Letter Modal -->
+        <div id="modal-letter" class="modal">
+            <div class="modal-box">
+                <div class="modal-head">
+                    <h2>💌 Love Letters</h2>
+                    <button class="modal-x" data-close>&times;</button>
                 </div>
                 <div class="modal-body">
-                    <div class="gallery-container">
-                        <div class="gallery-main">
-                            <img id="current-memory" src="" alt="Take photos with the 📷 button!">
-                            <div class="gallery-controls">
-                                <button id="prev-memory"><i class="fas fa-chevron-left"></i></button>
-                                <button id="next-memory"><i class="fas fa-chevron-right"></i></button>
-                            </div>
-                        </div>
-                        <div class="gallery-thumbnails" id="gallery-thumbnails">
-                            <p style="color:rgba(255,255,255,0.4); padding:15px;">Take photos with the 📷 button to fill your gallery!</p>
-                        </div>
+                    <div id="letters-list"></div>
+                    <div class="letter-compose">
+                        <h3>Write a New Letter</h3>
+                        <textarea id="letter-input" placeholder="Pour your heart out..."></textarea>
+                        <button class="btn btn-primary" id="btn-send-letter"><i class="fas fa-paper-plane"></i> Send</button>
                     </div>
                 </div>
             </div>
         </div>
-        
+
+        <!-- TV / Gallery Modal -->
+        <div id="modal-tv" class="modal">
+            <div class="modal-box wide">
+                <div class="modal-head">
+                    <h2>📺 Memory Gallery</h2>
+                    <button class="modal-x" data-close>&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="gallery-main" id="gallery-main">
+                        <p style="color:rgba(255,255,255,0.4)">Take photos with 📷 to fill this gallery!</p>
+                    </div>
+                    <div class="gallery-thumbs" id="gallery-thumbs"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Notifications -->
-        <div id="notification-container"></div>
+        <div id="notifs"></div>
     </div>
-    
-    <!-- Single game script (all logic consolidated) -->
+
     <script src="game.js"></script>
 </body>
 </html>
