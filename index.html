@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tanmai's Sanctuary ✦ An Interactive Love Letter</title>
-    <meta name="description" content="A breathtaking 3D interactive love letter experience">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>">
+    <title>Tan's Home ✦ A Valentine Sanctuary</title>
+    <meta name="description" content="An intimate 3D space built for you.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Poppins:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -21,7 +21,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
-    <!-- ═══════ CINEMATIC LOADING SCREEN ═══════ -->
+    <!-- ═══════ LOADING SCREEN ═══════ -->
     <div id="loading-screen">
         <div class="loader-container">
             <div class="loader-bg-particles" id="loader-particles"></div>
@@ -30,10 +30,10 @@
                     <div class="loader-ring"></div>
                     <div class="loader-ring r2"></div>
                     <div class="loader-ring r3"></div>
-                    <span class="loader-icon">🌸</span>
+                    <span class="loader-icon">🏠</span>
                 </div>
-                <h1 class="loader-title">Tanmai's Sanctuary</h1>
-                <p class="loader-subtitle">An Interactive Love Letter</p>
+                <h1 class="loader-title">Tan's Home</h1>
+                <p class="loader-subtitle">A Valentine Sanctuary</p>
                 <div class="loader-progress">
                     <div class="loader-bar" id="load-bar"></div>
                     <div class="loader-glow" id="load-glow"></div>
@@ -42,7 +42,6 @@
                     <span class="loader-asset" id="load-asset">Initializing...</span>
                     <span class="loader-percentage" id="load-pct">0%</span>
                 </div>
-                <div class="loader-quote" id="loader-quote">"Every love story is beautiful, but ours is my favorite"</div>
             </div>
         </div>
     </div>
@@ -57,29 +56,21 @@
             <div class="menu-inner">
                 <div class="menu-header">
                     <div class="menu-petals">
-                        <span class="petal p1">🌸</span>
+                        <span class="petal p1">🏠</span>
                         <span class="petal p2">✦</span>
-                        <span class="petal p3">🌸</span>
-                        <span class="petal p4">✦</span>
-                        <span class="petal p5">🌸</span>
+                        <span class="petal p3">💖</span>
+                        <span class="petal p4">✨</span>
+                        <span class="petal p5">🏠</span>
                     </div>
-                    <h1 class="game-title">Tanmai's<br><span class="title-accent">Sanctuary</span></h1>
+                    <h1 class="game-title">Tan's<br><span class="title-accent">Home</span></h1>
                     <div class="title-line"></div>
-                    <p class="game-subtitle">An Interactive Love Letter</p>
-                    <div class="love-counter" id="love-counter">
-                        <i class="fas fa-heart"></i>
-                        <span id="days-together">Loading...</span>
-                    </div>
+                    <p class="game-subtitle">Built with love, for you</p>
                 </div>
                 <div class="menu-buttons">
                     <button id="btn-start" class="btn btn-primary btn-glow">
                         <i class="fas fa-play"></i>
-                        <span>Enter the Sanctuary</span>
+                        <span>Enter</span>
                         <div class="btn-shimmer"></div>
-                    </button>
-                    <button id="btn-continue" class="btn btn-secondary">
-                        <i class="fas fa-bookmark"></i>
-                        <span>Continue Journey</span>
                     </button>
                 </div>
                 <div class="menu-controls">
@@ -87,12 +78,10 @@
                     <div class="ctrl"><kbd>Mouse</kbd><span>Look</span></div>
                     <div class="ctrl"><kbd>E</kbd><span>Interact</span></div>
                     <div class="ctrl"><kbd>Space</kbd><span>Jump</span></div>
-                    <div class="ctrl"><kbd>F</kbd><span>Flashlight</span></div>
-                    <div class="ctrl"><kbd>Tab</kbd><span>Diary</span></div>
                     <div class="ctrl"><kbd>ESC</kbd><span>Pause</span></div>
                 </div>
                 <div class="menu-footer">
-                    <span>Made with 💕 for Tanmai</span>
+                    <span>Made with 💕 for Tan</span>
                 </div>
             </div>
         </div>
@@ -103,39 +92,7 @@
                 <h2 class="pause-title">✦ Paused ✦</h2>
                 <div class="menu-buttons">
                     <button id="btn-resume" class="btn btn-primary"><i class="fas fa-play"></i><span>Resume</span></button>
-                    <button id="btn-save" class="btn btn-secondary"><i class="fas fa-save"></i><span>Save Journey</span></button>
-                    <button id="btn-settings" class="btn btn-secondary"><i class="fas fa-cog"></i><span>Settings</span></button>
                     <button id="btn-quit" class="btn btn-danger"><i class="fas fa-home"></i><span>Main Menu</span></button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ═══════ SETTINGS PANEL ═══════ -->
-        <div id="settings-panel" class="modal">
-            <div class="modal-box">
-                <div class="modal-head">
-                    <h2>⚙️ Settings</h2>
-                    <button class="modal-x" data-close>&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="setting-group">
-                        <label>Mouse Sensitivity</label>
-                        <input type="range" id="set-sens" min="1" max="10" value="5" class="slider">
-                    </div>
-                    <div class="setting-group">
-                        <label>Bloom Intensity</label>
-                        <input type="range" id="set-bloom" min="0" max="20" value="10" class="slider">
-                    </div>
-                    <div class="setting-group">
-                        <label>Particle Density</label>
-                        <input type="range" id="set-particles" min="1" max="10" value="7" class="slider">
-                    </div>
-                    <div class="setting-group">
-                        <label><input type="checkbox" id="set-weather" checked> Dynamic Weather</label>
-                    </div>
-                    <div class="setting-group">
-                        <label><input type="checkbox" id="set-ambient" checked> Ambient Sounds</label>
-                    </div>
                 </div>
             </div>
         </div>
@@ -154,21 +111,9 @@
                     <div class="hud-location" id="hud-location">🏠 Main Room</div>
                 </div>
                 <div class="hud-stats">
-                    <div class="hud-stat tooltip" data-tip="Plant Day">
-                        <i class="fas fa-seedling" style="color:#66bb6a"></i>
-                        <span id="hud-plant-day">1</span>
-                    </div>
-                    <div class="hud-stat tooltip" data-tip="Love Letters">
-                        <i class="fas fa-envelope" style="color:#ff6b8b"></i>
-                        <span id="hud-letters">0</span>
-                    </div>
-                    <div class="hud-stat tooltip" data-tip="Memories">
-                        <i class="fas fa-camera" style="color:#ce93d8"></i>
-                        <span id="hud-photos">0</span>
-                    </div>
-                    <div class="hud-stat tooltip" data-tip="Wishes">
-                        <i class="fas fa-star" style="color:#ffcc00"></i>
-                        <span id="hud-wishes">0</span>
+                    <div class="hud-stat tooltip" data-tip="Bonsai Health">
+                        <i class="fas fa-heart" style="color:#ff6b8b"></i>
+                        <span id="hud-plant-health">85</span>%
                     </div>
                 </div>
             </div>
@@ -188,51 +133,14 @@
                 </div>
             </div>
 
-            <!-- Compass -->
-            <div class="hud-compass" id="hud-compass">
-                <div class="compass-arrow" id="compass-arrow"></div>
-                <span class="compass-label">N</span>
-            </div>
-
-            <!-- Bottom bar -->
+            <!-- Bottom actions -->
             <div class="hud-bottom">
                 <div class="hud-actions">
-                    <button class="act-btn tooltip" id="act-water" data-tip="Water Plant" title="Water Plant">
+                    <button class="act-btn tooltip" id="act-water" data-tip="Water Bonsai">
                         <i class="fas fa-tint"></i>
                         <span class="act-label">Water</span>
                     </button>
-                    <button class="act-btn tooltip" id="act-letter" data-tip="Letters" title="Love Letters">
-                        <i class="fas fa-feather-alt"></i>
-                        <span class="act-label">Letters</span>
-                    </button>
-                    <button class="act-btn tooltip" id="act-photo" data-tip="Photo Mode" title="Take Photo">
-                        <i class="fas fa-camera"></i>
-                        <span class="act-label">Photo</span>
-                    </button>
-                    <button class="act-btn tooltip" id="act-wish" data-tip="Make a Wish" title="Wish">
-                        <i class="fas fa-star"></i>
-                        <span class="act-label">Wish</span>
-                    </button>
-                    <button class="act-btn tooltip" id="act-diary" data-tip="Open Diary" title="Diary">
-                        <i class="fas fa-book"></i>
-                        <span class="act-label">Diary</span>
-                    </button>
-                    <button class="act-btn tooltip" id="act-flashlight" data-tip="Toggle Flashlight" title="Flashlight">
-                        <i class="fas fa-lightbulb"></i>
-                        <span class="act-label">Light</span>
-                    </button>
                 </div>
-            </div>
-
-            <!-- Photo Mode Overlay -->
-            <div id="photo-mode" class="photo-mode hidden">
-                <div class="photo-frame"></div>
-                <div class="photo-controls">
-                    <button class="photo-btn" id="photo-filter"><i class="fas fa-palette"></i> Filter</button>
-                    <button class="photo-btn photo-capture" id="photo-snap"><i class="fas fa-camera"></i> Capture</button>
-                    <button class="photo-btn" id="photo-exit"><i class="fas fa-times"></i> Exit</button>
-                </div>
-                <div class="photo-filter-name" id="photo-filter-name">Normal</div>
             </div>
         </div>
 
@@ -250,11 +158,9 @@
             </div>
             <div class="mp-center">
                 <div class="mp-controls">
-                    <button class="mp-btn mp-small" id="mp-shuffle"><i class="fas fa-random"></i></button>
                     <button class="mp-btn" id="mp-prev"><i class="fas fa-backward"></i></button>
                     <button class="mp-btn mp-play" id="mp-play"><i class="fas fa-play"></i></button>
                     <button class="mp-btn" id="mp-next"><i class="fas fa-forward"></i></button>
-                    <button class="mp-btn mp-small" id="mp-repeat"><i class="fas fa-redo"></i></button>
                 </div>
                 <div class="mp-progress-row">
                     <span class="mp-time" id="mp-elapsed">0:00</span>
@@ -270,11 +176,6 @@
                     <i class="fas fa-volume-up" id="mp-vol-icon"></i>
                     <input type="range" id="mp-volume" min="0" max="100" value="60" class="mp-vol-slider">
                 </div>
-                <button class="mp-btn mp-small" id="mp-list-toggle"><i class="fas fa-list"></i></button>
-            </div>
-            <div id="mp-tracklist" class="mp-tracklist hidden">
-                <h4>🎶 Playlist</h4>
-                <div id="mp-tracks"></div>
             </div>
         </div>
 
@@ -283,7 +184,7 @@
         <div id="modal-plant" class="modal">
             <div class="modal-box">
                 <div class="modal-head">
-                    <h2>🌸 Our Love Plant</h2>
+                    <h2>🌸 Our Bonsai</h2>
                     <button class="modal-x" data-close>&times;</button>
                 </div>
                 <div class="modal-body">
@@ -293,50 +194,16 @@
                             <div class="plant-pot-ui"></div>
                             <div class="plant-stem-ui"></div>
                             <div class="plant-canopy-ui" id="plant-canopy"></div>
-                            <div class="plant-bloom-ui" id="plant-bloom"></div>
-                            <div class="plant-sparkles">
-                                <span class="sparkle s1">✨</span>
-                                <span class="sparkle s2">✨</span>
-                                <span class="sparkle s3">✨</span>
-                            </div>
                         </div>
                         <div class="plant-details">
-                            <h3>Cherry Blossom Bonsai</h3>
-                            <p class="plant-stage" id="plant-stage">Seedling Stage 🌱</p>
-                            <p>This plant grows with our love. Water it daily and watch it bloom!</p>
+                            <h3>Cherry Bonsai</h3>
                             <div class="bar-group">
                                 <label><i class="fas fa-heart"></i> Health</label>
                                 <div class="bar"><div class="bar-fill green" id="bar-health" style="width:85%"></div></div>
                                 <span id="val-health">85%</span>
                             </div>
-                            <div class="bar-group">
-                                <label><i class="fas fa-seedling"></i> Growth</label>
-                                <div class="bar"><div class="bar-fill pink" id="bar-growth" style="width:30%"></div></div>
-                                <span id="val-growth">30%</span>
-                            </div>
-                            <div class="bar-group">
-                                <label><i class="fas fa-tint"></i> Hydration</label>
-                                <div class="bar"><div class="bar-fill blue" id="bar-hydration" style="width:50%"></div></div>
-                                <span id="val-hydration">50%</span>
-                            </div>
-                            <div class="plant-stats-row">
-                                <div class="plant-stat-card">
-                                    <span class="psc-num" id="val-days">1</span>
-                                    <span class="psc-label">Days Alive</span>
-                                </div>
-                                <div class="plant-stat-card">
-                                    <span class="psc-num" id="val-waters">0</span>
-                                    <span class="psc-label">Times Watered</span>
-                                </div>
-                                <div class="plant-stat-card">
-                                    <span class="psc-num" id="val-blooms">0</span>
-                                    <span class="psc-label">Blooms</span>
-                                </div>
-                            </div>
                             <div class="plant-btns">
                                 <button class="btn btn-primary" id="btn-water"><i class="fas fa-tint"></i> Water</button>
-                                <button class="btn btn-secondary" id="btn-fert"><i class="fas fa-leaf"></i> Fertilize</button>
-                                <button class="btn btn-secondary" id="btn-sing"><i class="fas fa-music"></i> Sing to it</button>
                             </div>
                         </div>
                     </div>
@@ -348,116 +215,25 @@
         <div id="modal-letter" class="modal">
             <div class="modal-box wide">
                 <div class="modal-head">
-                    <h2>💌 Love Letters</h2>
+                    <h2>💌 Your Letter</h2>
                     <button class="modal-x" data-close>&times;</button>
                 </div>
                 <div class="modal-body">
-                    <div class="letter-tabs">
-                        <button class="ltab active" data-tab="received"><i class="fas fa-inbox"></i> Received</button>
-                        <button class="ltab" data-tab="sent"><i class="fas fa-paper-plane"></i> Sent</button>
-                        <button class="ltab" data-tab="compose"><i class="fas fa-pen"></i> Write</button>
-                    </div>
-                    <div id="letters-list" class="letter-tab-content active"></div>
-                    <div id="letters-sent" class="letter-tab-content"></div>
-                    <div id="letters-compose" class="letter-tab-content">
-                        <div class="letter-paper">
-                            <div class="letter-paper-header">
-                                <input type="text" id="letter-title" placeholder="Letter title..." class="letter-title-input">
-                                <div class="letter-date-stamp" id="letter-date-stamp"></div>
-                            </div>
-                            <textarea id="letter-input" placeholder="My dearest Tanmai..."></textarea>
-                            <div class="letter-mood">
-                                <span>Mood:</span>
-                                <button class="mood-btn active" data-mood="love">❤️</button>
-                                <button class="mood-btn" data-mood="happy">😊</button>
-                                <button class="mood-btn" data-mood="miss">🥺</button>
-                                <button class="mood-btn" data-mood="grateful">🙏</button>
-                                <button class="mood-btn" data-mood="excited">🎉</button>
-                            </div>
-                            <button class="btn btn-primary" id="btn-send-letter">
-                                <i class="fas fa-paper-plane"></i> Seal & Send with Love
-                            </button>
+                    <div id="letter-display" class="letter-paper">
+                        <div class="letter-paper-header">
+                            <h4 id="letter-title-display">For You, on Valentine’s Day 💖</h4>
+                            <div class="letter-date-stamp" id="letter-date-stamp"></div>
+                        </div>
+                        <div id="letter-content-display" class="letter-content">
+                            My dearest Tan, every star in this sky was placed here for you. You are my universe. Happy Valentine’s Day.
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- TV / Gallery Modal -->
-        <div id="modal-tv" class="modal">
-            <div class="modal-box wide">
-                <div class="modal-head">
-                    <h2>📺 Memory Gallery</h2>
-                    <button class="modal-x" data-close>&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="gallery-main" id="gallery-main">
-                        <div class="gallery-empty">
-                            <i class="fas fa-camera-retro"></i>
-                            <p>Take photos with 📷 to fill this gallery!</p>
-                            <p class="gallery-hint">Press <kbd>F5</kbd> or use the Photo button</p>
-                        </div>
-                    </div>
-                    <div class="gallery-thumbs" id="gallery-thumbs"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Wish Modal -->
-        <div id="modal-wish" class="modal">
-            <div class="modal-box">
-                <div class="modal-head">
-                    <h2>🌠 Wishing Star</h2>
-                    <button class="modal-x" data-close>&times;</button>
-                </div>
-                <div class="modal-body wish-body">
-                    <div class="wish-visual">
-                        <div class="wish-star">⭐</div>
-                        <div class="wish-glow"></div>
-                    </div>
-                    <p class="wish-intro">Write your wish on a star and release it into the sky...</p>
-                    <textarea id="wish-input" placeholder="I wish..." class="wish-textarea"></textarea>
-                    <button class="btn btn-primary btn-glow" id="btn-make-wish">
-                        <i class="fas fa-star"></i> Release into the Stars
-                    </button>
-                    <div id="wish-list" class="wish-list"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Diary Modal -->
-        <div id="modal-diary" class="modal">
-            <div class="modal-box wide">
-                <div class="modal-head">
-                    <h2>📖 Our Love Diary</h2>
-                    <button class="modal-x" data-close>&times;</button>
-                </div>
-                <div class="modal-body diary-body">
-                    <div class="diary-timeline" id="diary-timeline"></div>
-                    <div class="diary-compose">
-                        <h3>✍️ Today's Entry</h3>
-                        <textarea id="diary-input" placeholder="What made today special..."></textarea>
-                        <button class="btn btn-primary" id="btn-diary-save"><i class="fas fa-save"></i> Save Entry</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Achievement Toast -->
-        <div id="achievement-toast" class="achievement-toast hidden">
-            <div class="achievement-icon" id="ach-icon">🏆</div>
-            <div class="achievement-info">
-                <div class="achievement-label">Achievement Unlocked!</div>
-                <div class="achievement-name" id="ach-name"></div>
             </div>
         </div>
 
         <!-- Notifications -->
         <div id="notifs"></div>
-
-        <!-- Cinematic Bars -->
-        <div class="cinema-bar cinema-top" id="cinema-top"></div>
-        <div class="cinema-bar cinema-bottom" id="cinema-bottom"></div>
     </div>
 
     <script src="game.js"></script>
