@@ -1452,3 +1452,177 @@ kbd:hover {
 .scale-in {
     animation: scaleIn 0.3s ease-out;
 }
+/* ═══════════════════════════════════════════════════════════════
+   ENHANCED BUTTONS & INTERACTIONS v150
+   ═══════════════════════════════════════════════════════════════ */
+.upload-photos-btn, .write-letter-btn {
+    position: fixed;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 50px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    font-family: var(--font-body);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.upload-photos-btn {
+    bottom: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #ff6b8b, #ff88aa);
+    box-shadow: 0 4px 15px rgba(255, 107, 139, 0.4);
+}
+
+.upload-photos-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(255, 107, 139, 0.6);
+}
+
+.write-letter-btn {
+    bottom: 80px;
+    right: 20px;
+    background: linear-gradient(135deg, #9966ff, #aa88ff);
+    box-shadow: 0 4px 15px rgba(153, 102, 255, 0.4);
+}
+
+.write-letter-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(153, 102, 255, 0.6);
+}
+
+/* Smooth crosshair transitions */
+.crosshair.active .crosshair-ring {
+    border-color: var(--rose) !important;
+    transform: scale(1.2);
+    box-shadow: 0 0 10px rgba(255, 107, 139, 0.5);
+}
+
+/* Notification animations */
+.notification {
+    animation: notifSlide 0.3s ease-out;
+}
+
+@keyframes notifSlide {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes notifFadeOut {
+    to {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+    }
+}
+
+/* Valentine message animation */
+.valentine-message {
+    animation: fadeInScale 1s ease-out;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* Letter editor modal */
+.letter-editor-modal .modal-box {
+    max-width: 700px;
+    width: 90%;
+}
+
+.letter-editor-modal textarea {
+    font-family: 'Cormorant Garamond', serif;
+    line-height: 1.8;
+}
+
+.letter-editor-modal textarea:focus {
+    outline: none;
+    border-color: var(--rose);
+    box-shadow: 0 0 0 2px rgba(255, 107, 139, 0.2);
+}
+
+/* Modal show animation */
+.modal.show {
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(10px);
+    }
+}
+
+.modal.show .modal-box {
+    animation: modalSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translate(-50%, -48%) scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+
+/* Enhanced button press effect */
+.btn:active {
+    transform: scale(0.95);
+}
+
+.act-btn:active {
+    transform: translateY(-1px) scale(0.95);
+}
+
+/* Smooth interact hint */
+.interact-hint {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.interact-hint.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Enhanced tooltips */
+.tooltip:hover::after {
+    animation: tooltipFadeIn 0.2s ease-out;
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}

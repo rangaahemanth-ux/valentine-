@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// TAN'S HOME — ENHANCED EDITION v7.0
-// Ultra-optimized 3D Valentine Sanctuary with Garden Growth System
+// TAN'S HOME — ULTIMATE EDITION v150.0
+// The most romantic 3D sanctuary ever created
 // ═══════════════════════════════════════════════════════════════════════════
 
 class GameEngine {
@@ -14,13 +14,7 @@ class GameEngine {
         this.keys = {};
         this.delta = 0;
 
-        // Performance optimizations
-        this.instancedMeshes = new Map();
-        this.objectPool = new Map();
-        this.frustumCulling = true;
-        this.LODEnabled = true;
-
-        // State management
+        // Enhanced state management
         this.state = {
             loaded: false,
             started: false,
@@ -32,31 +26,37 @@ class GameEngine {
             photoMode: false,
             photoFilter: 0,
             onRoof: false,
+            inBasement: false,
+            sitting: false,
+            sittingPosition: null,
             musicVisualizerActive: false,
-            gardenLevel: 1, // VS Code garden-style growth
-            gardenXP: 0,
-            dailyStreak: 0,
-            achievements: [],
+            customLetterOpen: false,
+            photoUploadOpen: false,
             player: { 
                 pos: new THREE.Vector3(0, 1.6, 3), 
                 vel: new THREE.Vector3(0, 0, 0),
-                canMove: false, 
+                canMove: true, 
                 canJump: true,
-                speed: 0.08,
-                jumpPower: 0.15
+                speed: 0.12, // Smoother, faster movement
+                jumpPower: 0.18,
+                rotation: new THREE.Euler(0, 0, 0),
+                yaw: 0,
+                pitch: 0
             },
             settings: { 
-                mouseSens: 0.002, 
+                mouseSens: 0.0015, // Smoother look
                 bloom: true, 
                 particles: true,
                 shadows: true,
-                quality: 'high' // high, medium, low
+                quality: 'ultra'
             },
             memories: [],
+            uploadedPhotos: [],
+            customLetter: '',
             slideshowIndex: 0,
             slideshowTimer: 0,
-            weather: 'stars', // stars, rain, snow, sakura
-            timeOfDay: 20 // 0-24 hour
+            weather: 'space',
+            timeOfDay: 20
         };
 
         // Collections
@@ -66,1829 +66,1591 @@ class GameEngine {
         this.particles = [];
         this.birds = [];
         this.fish = [];
+        this.stingrays = [];
+        this.candles = [];
+        this.snowflakes = [];
+        this.planets = [];
+        this.shootingStars = [];
+        this.sitPoints = [];
         this.physVelY = 0;
         this.flashlightObj = null;
         this._currentInteractive = null;
         this.mixer = null;
+        this.raycaster = new THREE.Raycaster();
+        this.mouse = new THREE.Vector2();
 
-        // Garden growth system (VS Code style)
-        this.gardenStages = [
-            { level: 1, name: '🌱 Seedling', xpNeeded: 0, scale: 0.3, color: 0x88ff88 },
-            { level: 2, name: '🌿 Sprout', xpNeeded: 100, scale: 0.5, color: 0x66dd66 },
-            { level: 3, name: '🌳 Young Tree', xpNeeded: 300, scale: 0.75, color: 0x44bb44 },
-            { level: 4, name: '🌸 Blooming', xpNeeded: 600, scale: 1.0, color: 0xffaacc },
-            { level: 5, name: '🏵️ Magnificent', xpNeeded: 1000, scale: 1.3, color: 0xff66aa },
-            { level: 6, name: '✨ Transcendent', xpNeeded: 2000, scale: 1.6, color: 0xff4488 }
-        ];
-
-        // Images configuration
+        // Default images (will be replaced by uploaded ones)
         this.tanImages = [
-            'https://picsum.photos/seed/tan1/800/600',
-            'https://picsum.photos/seed/tan2/800/600',
-            'https://picsum.photos/seed/tan3/800/600',
-            'https://picsum.photos/seed/tan4/800/600',
-            'https://picsum.photos/seed/tan5/800/600',
-            'https://picsum.photos/seed/tan6/800/600'
+            'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800',
+            'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800',
+            'https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?w=800',
+            'https://images.unsplash.com/photo-1502898125287-0be8fbef8542?w=800'
         ];
-        this.bigPortrait = 'https://picsum.photos/seed/tanportrait/600/800';
+        this.bigPortrait = 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600';
+
+        // Smooth camera movement
+        this.targetCameraRotation = { yaw: 0, pitch: 0 };
+        this.smoothRotation = { yaw: 0, pitch: 0 };
         
-        this.photoFilters = [
-            { name: 'Normal', css: 'none' },
-            { name: 'Warm Memory', css: 'sepia(0.3) saturate(1.3) brightness(1.05)' },
-            { name: 'Rose Tinted', css: 'hue-rotate(-10deg) saturate(1.5) brightness(1.1)' },
-            { name: 'Vintage', css: 'sepia(0.5) contrast(1.1) brightness(0.9)' },
-            { name: 'Dreamy', css: 'blur(0.5px) saturate(1.4) brightness(1.15)' },
-            { name: 'Sakura', css: 'hue-rotate(-20deg) saturate(1.8) brightness(1.05) contrast(0.95)' }
-        ];
+        // Elevator system
+        this.elevator = {
+            moving: false,
+            targetFloor: 0, // 0 = main, 1 = roof, -1 = basement
+            currentFloor: 0,
+            position: 0,
+            speed: 0.02
+        };
 
         this.init();
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    // INITIALIZATION
-    // ══════════════════════════════════════════════════════════════════
     async init() {
-        try {
-            this.initLoaderParticles();
-            this.progress(5, 'Waking up the universe...');
-            await this.sleep(150);
-            
-            this.progress(10, 'Creating renderer...');
-            this.initRenderer();
-            
-            this.progress(15, 'Building the cosmos...');
-            this.initScene();
-            this.initCamera();
-            
-            this.progress(20, 'Post-processing magic...');
-            this.initPostProcessing();
-            
-            this.progress(25, 'Painting light...');
-            this.initLighting();
-            
-            this.progress(35, 'Building Tan\'s Home...');
-            this.buildWorld();
-            
-            this.progress(50, 'Painting the sky...');
-            this.createEnhancedSky();
-            
-            this.progress(60, 'Releasing the creatures...');
-            this.createEnhancedBirds();
-            this.createEnhancedFish();
-            
-            this.progress(70, 'Cherry blossoms falling...');
-            this.createEnhancedParticles();
-            
-            this.progress(78, 'Growing the garden...');
-            this.initGardenSystem();
-            
-            this.progress(84, 'Tuning music...');
-            this.initMusicPlayer();
-            this.initMusicVisualizer();
-            
-            this.progress(90, 'Loading slideshow...');
-            this.initSlideshow();
-            
-            this.progress(95, 'Preparing magic...');
-            this.initFlashlight();
-            this.initPhotoMode();
-            
-            this.progress(100, 'Welcome home, Tan ♥');
-            this.setupEvents();
-            this.loadSavedProgress();
-            
-            this.state.loaded = true;
-            await this.sleep(800);
-            
-            const ls = document.getElementById('loading-screen');
-            if (ls) {
-                ls.classList.add('fade-out');
-                setTimeout(() => ls.style.display = 'none', 1200);
-            }
-            
-            this.gameLoop();
-            this.showWelcomeMessage();
-            
-        } catch (e) {
-            console.error('Init failed:', e);
-            document.body.innerHTML = `<div style="color:#fff;padding:40px;font-family:sans-serif;text-align:center"><h2>Failed to load</h2><p>${e.message}</p></div>`;
-        }
+        this.setupRenderer();
+        this.setupCamera();
+        this.setupLights();
+        await this.loadAssets();
+        this.createWorld();
+        this.createEnhancedParticleSystems();
+        this.createCandles();
+        this.createPlanetsAndStars();
+        this.createSpaceCreatures();
+        this.createElevatorSystem();
+        this.createSitPoints();
+        this.setupControls();
+        this.setupUI();
+        this.animate();
+        this.finishLoading();
     }
 
-    initRenderer() {
-        this.renderer = new THREE.WebGLRenderer({
-            canvas: document.getElementById('game-canvas'),
-            antialias: window.devicePixelRatio < 2,
-            powerPreference: 'high-performance',
-            alpha: false
+    setupRenderer() {
+        const canvas = document.getElementById('game-canvas');
+        this.renderer = new THREE.WebGLRenderer({ 
+            canvas, 
+            antialias: true, 
+            alpha: false,
+            powerPreference: 'high-performance'
         });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.outputEncoding = THREE.sRGBEncoding;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         this.renderer.toneMappingExposure = 1.2;
-        this.renderer.shadowMap.enabled = this.state.settings.shadows;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    }
-
-    initScene() {
-        this.scene = new THREE.Scene();
-        this.scene.fog = new THREE.FogExp2(0x05051a, 0.015);
-    }
-
-    initCamera() {
-        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.camera.position.copy(this.state.player.pos);
-        this.camera.rotation.order = 'YXZ';
-    }
-
-    initPostProcessing() {
-        if (!this.state.settings.bloom) return;
         
-        this.composer = new THREE.EffectComposer(this.renderer);
-        const renderPass = new THREE.RenderPass(this.scene, this.camera);
-        this.composer.addPass(renderPass);
-
-        const bloomPass = new THREE.UnrealBloomPass(
-            new THREE.Vector2(window.innerWidth, window.innerHeight),
-            0.8,  // strength
-            0.4,  // radius
-            0.85  // threshold
-        );
-        this.composer.addPass(bloomPass);
+        this.scene = new THREE.Scene();
+        this.scene.fog = new THREE.FogExp2(0x000510, 0.02);
     }
 
-    initLighting() {
-        // Ambient light
-        const ambient = new THREE.AmbientLight(0x4466aa, 0.3);
+    setupCamera() {
+        this.camera = new THREE.PerspectiveCamera(
+            75, 
+            window.innerWidth / window.innerHeight, 
+            0.1, 
+            1000
+        );
+        this.camera.position.copy(this.state.player.pos);
+    }
+
+    setupLights() {
+        // Ambient light for base visibility
+        const ambient = new THREE.AmbientLight(0x404060, 0.4);
         this.scene.add(ambient);
 
-        // Moon light (directional)
-        const moonLight = new THREE.DirectionalLight(0xaaccff, 0.8);
-        moonLight.position.set(20, 40, 10);
-        moonLight.castShadow = this.state.settings.shadows;
-        if (this.state.settings.shadows) {
-            moonLight.shadow.mapSize.width = 2048;
-            moonLight.shadow.mapSize.height = 2048;
-            moonLight.shadow.camera.near = 0.5;
-            moonLight.shadow.camera.far = 100;
-            moonLight.shadow.camera.left = -30;
-            moonLight.shadow.camera.right = 30;
-            moonLight.shadow.camera.top = 30;
-            moonLight.shadow.camera.bottom = -30;
-        }
+        // Moon light
+        const moonLight = new THREE.DirectionalLight(0xaaccff, 0.6);
+        moonLight.position.set(20, 30, 10);
+        moonLight.castShadow = true;
+        moonLight.shadow.mapSize.width = 2048;
+        moonLight.shadow.mapSize.height = 2048;
+        moonLight.shadow.camera.far = 100;
         this.scene.add(moonLight);
 
-        // Warm point lights
-        const warmLight1 = new THREE.PointLight(0xff8866, 1.5, 15);
-        warmLight1.position.set(-5, 3, 0);
-        this.scene.add(warmLight1);
-
-        const warmLight2 = new THREE.PointLight(0xffaa77, 1.2, 12);
-        warmLight2.position.set(5, 2.5, -5);
-        this.scene.add(warmLight2);
-
-        // Romantic glow
-        const glowLight = new THREE.PointLight(0xff6b8b, 2, 8);
-        glowLight.position.set(0, 2, -3);
-        this.scene.add(glowLight);
+        // Warm interior light
+        const interiorLight = new THREE.PointLight(0xffddaa, 1.5, 20);
+        interiorLight.position.set(0, 3, 0);
+        this.scene.add(interiorLight);
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    // WORLD BUILDING - Enhanced & Optimized
-    // ══════════════════════════════════════════════════════════════════
-    buildWorld() {
-        this.createFloor();
-        this.createWalls();
-        this.createFurniture();
-        this.createBonsaiPlant();
-        this.createTV();
-        this.createPortrait();
-        this.createRoof();
-        this.createLetterbox();
-        this.createDecorations();
+    async loadAssets() {
+        // Simulate loading
+        const loadBar = document.getElementById('load-bar');
+        const loadGlow = document.getElementById('load-glow');
+        const loadPct = document.getElementById('load-pct');
+        const loadAsset = document.getElementById('load-asset');
+
+        const assets = [
+            'Textures', 'Models', 'Particles', 'Shaders', 
+            'Audio', 'Environment', 'Creatures', 'Effects'
+        ];
+
+        for (let i = 0; i < assets.length; i++) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+            const pct = ((i + 1) / assets.length * 100).toFixed(0);
+            loadBar.style.width = pct + '%';
+            loadGlow.style.width = pct + '%';
+            loadPct.textContent = pct + '%';
+            loadAsset.textContent = `Loading ${assets[i]}...`;
+        }
+
+        this.state.loaded = true;
     }
 
-    createFloor() {
-        const geometry = new THREE.PlaneGeometry(50, 50);
-        const material = new THREE.MeshStandardMaterial({
-            color: 0x1a1a2e,
+    createWorld() {
+        // Space skybox with stars
+        this.createSpaceSkybox();
+        
+        // Main floor (inside)
+        const floorGeom = new THREE.BoxGeometry(20, 0.2, 20);
+        const floorMat = new THREE.MeshStandardMaterial({ 
+            color: 0x2a1f3d,
             roughness: 0.8,
-            metalness: 0.1
+            metalness: 0.2
         });
-        const floor = new THREE.Mesh(geometry, material);
-        floor.rotation.x = -Math.PI / 2;
+        const floor = new THREE.Mesh(floorGeom, floorMat);
+        floor.position.y = 0;
         floor.receiveShadow = true;
         this.scene.add(floor);
 
-        // Add subtle grid pattern
-        const gridHelper = new THREE.GridHelper(50, 50, 0x2a2a3e, 0x1a1a2e);
-        gridHelper.position.y = 0.01;
-        this.scene.add(gridHelper);
+        // Walls with windows
+        this.createWalls();
+
+        // Basement floor
+        const basementFloor = new THREE.Mesh(
+            new THREE.BoxGeometry(15, 0.2, 15),
+            new THREE.MeshStandardMaterial({ color: 0x1a1520 })
+        );
+        basementFloor.position.set(0, -8, 0);
+        basementFloor.receiveShadow = true;
+        this.scene.add(basementFloor);
+
+        // Roof platform
+        const roofFloor = new THREE.Mesh(
+            new THREE.BoxGeometry(18, 0.2, 18),
+            new THREE.MeshStandardMaterial({ color: 0x2a2040 })
+        );
+        roofFloor.position.set(0, 8, 0);
+        roofFloor.receiveShadow = true;
+        this.scene.add(roofFloor);
+
+        // Furniture
+        this.createFurniture();
+        this.createBonsai();
+        this.createTV();
+        this.createPortrait();
+        this.createPostBox();
+    }
+
+    createSpaceSkybox() {
+        // Starfield
+        const starGeometry = new THREE.BufferGeometry();
+        const starVertices = [];
+        for (let i = 0; i < 8000; i++) {
+            const x = (Math.random() - 0.5) * 1000;
+            const y = (Math.random() - 0.5) * 1000;
+            const z = (Math.random() - 0.5) * 1000;
+            starVertices.push(x, y, z);
+        }
+        starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+        const starMaterial = new THREE.PointsMaterial({ 
+            color: 0xffffff, 
+            size: 1.5,
+            transparent: true,
+            opacity: 0.9,
+            sizeAttenuation: true
+        });
+        const stars = new THREE.Points(starGeometry, starMaterial);
+        this.scene.add(stars);
+
+        // Moon
+        const moonGeom = new THREE.SphereGeometry(8, 32, 32);
+        const moonMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffffee,
+            emissive: 0xffffcc,
+            emissiveIntensity: 0.5
+        });
+        const moon = new THREE.Mesh(moonGeom, moonMat);
+        moon.position.set(50, 40, -80);
+        this.scene.add(moon);
     }
 
     createWalls() {
-        const wallMaterial = new THREE.MeshStandardMaterial({
-            color: 0x16162a,
-            roughness: 0.9,
-            metalness: 0.05
+        const wallMat = new THREE.MeshStandardMaterial({ 
+            color: 0x3a2f4d,
+            roughness: 0.7,
+            metalness: 0.1,
+            transparent: true,
+            opacity: 0.95
         });
 
-        // Back wall
-        const backWall = new THREE.Mesh(new THREE.BoxGeometry(20, 8, 0.3), wallMaterial);
-        backWall.position.set(0, 4, -10);
-        backWall.castShadow = true;
-        backWall.receiveShadow = true;
-        this.scene.add(backWall);
+        // North wall
+        const northWall = new THREE.Mesh(new THREE.BoxGeometry(20, 5, 0.2), wallMat);
+        northWall.position.set(0, 2.5, -10);
+        northWall.castShadow = true;
+        northWall.receiveShadow = true;
+        this.scene.add(northWall);
 
-        // Side walls
-        const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 8, 20), wallMaterial);
-        leftWall.position.set(-10, 4, 0);
-        leftWall.castShadow = true;
-        leftWall.receiveShadow = true;
-        this.scene.add(leftWall);
+        // South wall (with window)
+        const southWall = new THREE.Mesh(new THREE.BoxGeometry(20, 5, 0.2), wallMat);
+        southWall.position.set(0, 2.5, 10);
+        southWall.castShadow = true;
+        this.scene.add(southWall);
 
-        const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 8, 20), wallMaterial);
-        rightWall.position.set(10, 4, 0);
-        rightWall.castShadow = true;
-        rightWall.receiveShadow = true;
-        this.scene.add(rightWall);
+        // East wall
+        const eastWall = new THREE.Mesh(new THREE.BoxGeometry(0.2, 5, 20), wallMat);
+        eastWall.position.set(10, 2.5, 0);
+        eastWall.castShadow = true;
+        this.scene.add(eastWall);
+
+        // West wall
+        const westWall = new THREE.Mesh(new THREE.BoxGeometry(0.2, 5, 20), wallMat);
+        westWall.position.set(-10, 2.5, 0);
+        westWall.castShadow = true;
+        this.scene.add(westWall);
     }
 
     createFurniture() {
-        // Couch
-        const couchGroup = new THREE.Group();
-        const couchBody = new THREE.Mesh(
-            new THREE.BoxGeometry(4, 0.8, 1.8),
-            new THREE.MeshStandardMaterial({ color: 0x4a3c5a, roughness: 0.7 })
-        );
-        couchBody.position.y = 0.4;
-        couchBody.castShadow = true;
-        couchGroup.add(couchBody);
+        // Couch for sitting
+        const couchGeom = new THREE.BoxGeometry(3, 0.8, 1.5);
+        const couchMat = new THREE.MeshStandardMaterial({ color: 0x8b5a7d });
+        const couch = new THREE.Mesh(couchGeom, couchMat);
+        couch.position.set(-5, 0.4, -5);
+        couch.castShadow = true;
+        this.scene.add(couch);
 
-        const couchBack = new THREE.Mesh(
-            new THREE.BoxGeometry(4, 1.2, 0.3),
-            new THREE.MeshStandardMaterial({ color: 0x3a2c4a, roughness: 0.7 })
-        );
-        couchBack.position.set(0, 1.2, -0.75);
-        couchBack.castShadow = true;
-        couchGroup.add(couchBack);
-
-        couchGroup.position.set(0, 0, 5);
-        this.scene.add(couchGroup);
-
-        // Coffee table
-        const table = new THREE.Mesh(
-            new THREE.BoxGeometry(2, 0.1, 1),
-            new THREE.MeshStandardMaterial({ color: 0x5a4a3a, roughness: 0.4, metalness: 0.2 })
-        );
-        table.position.set(0, 0.5, 3);
+        // Table
+        const tableGeom = new THREE.BoxGeometry(2, 0.1, 1.5);
+        const tableMat = new THREE.MeshStandardMaterial({ color: 0x4a3a3a });
+        const table = new THREE.Mesh(tableGeom, tableMat);
+        table.position.set(0, 0.6, -3);
         table.castShadow = true;
-        table.receiveShadow = true;
         this.scene.add(table);
-
-        // Table legs
-        const legGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.5);
-        const legMaterial = new THREE.MeshStandardMaterial({ color: 0x3a2a1a, roughness: 0.6 });
-        
-        [[-0.8, -0.4], [0.8, -0.4], [-0.8, 0.4], [0.8, 0.4]].forEach(([x, z]) => {
-            const leg = new THREE.Mesh(legGeometry, legMaterial);
-            leg.position.set(x, 0.25, 3 + z);
-            leg.castShadow = true;
-            this.scene.add(leg);
-        });
     }
 
-    createBonsaiPlant() {
-        const bonsaiGroup = new THREE.Group();
-        
+    createBonsai() {
         // Pot
-        const potGeometry = new THREE.CylinderGeometry(0.3, 0.2, 0.3, 8);
-        const potMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0x8b4513, 
-            roughness: 0.8 
-        });
-        const pot = new THREE.Mesh(potGeometry, potMaterial);
-        pot.position.y = 0.15;
+        const potGeom = new THREE.CylinderGeometry(0.3, 0.25, 0.4, 16);
+        const potMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+        const pot = new THREE.Mesh(potGeom, potMat);
+        pot.position.set(0, 0.8, -3);
         pot.castShadow = true;
-        bonsaiGroup.add(pot);
+        this.scene.add(pot);
 
-        // Trunk
-        const trunkGeometry = new THREE.CylinderGeometry(0.08, 0.12, 0.8, 8);
-        const trunkMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0x4a3428, 
-            roughness: 0.9 
-        });
-        const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-        trunk.position.y = 0.7;
-        trunk.rotation.z = 0.1;
+        // Tree trunk
+        const trunkGeom = new THREE.CylinderGeometry(0.05, 0.08, 0.6, 8);
+        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3020 });
+        const trunk = new THREE.Mesh(trunkGeom, trunkMat);
+        trunk.position.set(0, 1.2, -3);
         trunk.castShadow = true;
-        bonsaiGroup.add(trunk);
+        this.scene.add(trunk);
 
-        // Canopy (will be animated based on growth level)
-        const canopyGeometry = new THREE.SphereGeometry(0.5, 8, 8);
-        const canopyMaterial = new THREE.MeshStandardMaterial({
-            color: 0x88ff88,
-            emissive: 0x224422,
-            emissiveIntensity: 0.2,
-            roughness: 0.7
+        // Foliage (cherry blossoms)
+        const foliageGeom = new THREE.SphereGeometry(0.4, 16, 16);
+        const foliageMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffb7c5,
+            emissive: 0xff88aa,
+            emissiveIntensity: 0.2
         });
-        const canopy = new THREE.Mesh(canopyGeometry, canopyMaterial);
-        canopy.position.set(0.15, 1.3, 0);
-        canopy.scale.set(0.8, 0.8, 0.8);
-        canopy.castShadow = true;
-        bonsaiGroup.add(canopy);
+        const foliage = new THREE.Mesh(foliageGeom, foliageMat);
+        foliage.position.set(0, 1.6, -3);
+        foliage.castShadow = true;
+        this.scene.add(foliage);
+        this.bonsai = foliage;
 
-        this.bonsaiCanopy = canopy; // Reference for growth animation
-
-        // Glow effect
-        const glowGeometry = new THREE.SphereGeometry(0.6, 16, 16);
-        const glowMaterial = new THREE.MeshBasicMaterial({
-            color: 0x88ff88,
-            transparent: true,
-            opacity: 0.1
-        });
-        const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-        glow.position.copy(canopy.position);
-        bonsaiGroup.add(glow);
-
-        bonsaiGroup.position.set(-3, 0.5, 2);
-        this.scene.add(bonsaiGroup);
-        this.bonsaiGroup = bonsaiGroup;
-
-        // Make interactive
+        // Interactive
         this.interactiveObjects.push({
-            object: bonsaiGroup,
-            type: 'plant',
-            name: 'Bonsai Garden',
-            description: 'Water and nurture your love',
-            onInteract: () => this.openPlantModal()
+            object: foliage,
+            name: 'Bonsai Tree',
+            desc: 'Water the bonsai',
+            action: () => this.openPlantModal()
         });
     }
 
     createTV() {
-        const tvGroup = new THREE.Group();
-        
-        // TV Stand
-        const standGeometry = new THREE.BoxGeometry(3, 0.6, 1);
-        const standMaterial = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.5 });
-        const stand = new THREE.Mesh(standGeometry, standMaterial);
-        stand.position.y = 0.3;
-        stand.castShadow = true;
-        tvGroup.add(stand);
+        // TV screen
+        const tvGeom = new THREE.BoxGeometry(4, 2.5, 0.1);
+        const tvMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        const tv = new THREE.Mesh(tvGeom, tvMat);
+        tv.position.set(0, 2, -9.8);
+        tv.castShadow = true;
+        this.scene.add(tv);
 
-        // TV Frame
-        const frameGeometry = new THREE.BoxGeometry(2.8, 1.8, 0.1);
-        const frameMaterial = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.5 });
-        const frame = new THREE.Mesh(frameGeometry, frameMaterial);
-        frame.position.y = 1.5;
-        frame.castShadow = true;
-        tvGroup.add(frame);
-
-        // TV Screen (will show slideshow)
-        const screenGeometry = new THREE.PlaneGeometry(2.6, 1.6);
-        const screenMaterial = new THREE.MeshBasicMaterial({ 
-            color: 0x000000,
-            emissive: 0x333333,
+        // Screen display (photo slideshow)
+        const screenGeom = new THREE.PlaneGeometry(3.8, 2.3);
+        const screenMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff,
+            emissive: 0x888888,
             emissiveIntensity: 0.5
         });
-        const screen = new THREE.Mesh(screenGeometry, screenMaterial);
-        screen.position.set(0, 1.5, 0.06);
-        tvGroup.add(screen);
+        const screen = new THREE.Mesh(screenGeom, screenMat);
+        screen.position.set(0, 2, -9.7);
+        this.scene.add(screen);
         this.tvScreen = screen;
 
-        tvGroup.position.set(6, 0, -8);
-        tvGroup.rotation.y = -Math.PI * 0.15;
-        this.scene.add(tvGroup);
+        // Load first image
+        this.updateTVSlideshow();
 
-        // Make interactive
+        // Interactive
         this.interactiveObjects.push({
-            object: tvGroup,
-            type: 'tv',
-            name: 'Memory Slideshow',
-            description: 'Watch our moments together',
-            onInteract: () => this.cycleSlideshow()
+            object: tv,
+            name: 'Photo Slideshow',
+            desc: 'View memories',
+            action: () => this.nextSlide()
         });
     }
 
     createPortrait() {
-        const portraitGroup = new THREE.Group();
-        
-        // Frame
-        const frameGeometry = new THREE.BoxGeometry(1.2, 1.8, 0.1);
-        const frameMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0x8b6914, 
-            roughness: 0.4,
-            metalness: 0.6
-        });
-        const frame = new THREE.Mesh(frameGeometry, frameMaterial);
+        // Large portrait on wall
+        const frameGeom = new THREE.BoxGeometry(2.5, 3.5, 0.1);
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x8b7355 });
+        const frame = new THREE.Mesh(frameGeom, frameMat);
+        frame.position.set(-8, 2.5, 0);
+        frame.rotation.y = Math.PI / 2;
         frame.castShadow = true;
-        portraitGroup.add(frame);
+        this.scene.add(frame);
 
         // Portrait image
-        const portraitGeometry = new THREE.PlaneGeometry(1, 1.6);
-        const portraitMaterial = new THREE.MeshBasicMaterial({ 
-            color: 0xffffff,
-            emissive: 0x222222,
-            emissiveIntensity: 0.3
+        const portraitGeom = new THREE.PlaneGeometry(2.3, 3.3);
+        const loader = new THREE.TextureLoader();
+        loader.load(this.bigPortrait, (texture) => {
+            const portraitMat = new THREE.MeshStandardMaterial({ 
+                map: texture,
+                emissive: 0xffffff,
+                emissiveIntensity: 0.1
+            });
+            const portrait = new THREE.Mesh(portraitGeom, portraitMat);
+            portrait.position.set(-7.9, 2.5, 0);
+            portrait.rotation.y = Math.PI / 2;
+            this.scene.add(portrait);
         });
-        const portrait = new THREE.Mesh(portraitGeometry, portraitMaterial);
-        portrait.position.z = 0.06;
-        portraitGroup.add(portrait);
-
-        // Glow
-        const glowGeometry = new THREE.PlaneGeometry(1.3, 1.9);
-        const glowMaterial = new THREE.MeshBasicMaterial({
-            color: 0xff6b8b,
-            transparent: true,
-            opacity: 0.05
-        });
-        const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-        glow.position.z = -0.01;
-        portraitGroup.add(glow);
-
-        portraitGroup.position.set(-8, 4, -5);
-        portraitGroup.rotation.y = Math.PI * 0.1;
-        this.scene.add(portraitGroup);
-
-        this.portrait = portrait;
     }
 
-    createRoof() {
-        const roofGeometry = new THREE.BoxGeometry(22, 0.3, 22);
-        const roofMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0x0a0a1a, 
-            roughness: 0.8 
+    createPostBox() {
+        // Cute postbox on roof
+        const boxGeom = new THREE.BoxGeometry(0.8, 1, 0.6);
+        const boxMat = new THREE.MeshStandardMaterial({ 
+            color: 0xff4466,
+            metalness: 0.3,
+            roughness: 0.6
         });
-        const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-        roof.position.set(0, 8.15, 0);
-        roof.receiveShadow = true;
-        this.scene.add(roof);
-
-        // Ladder
-        const ladderGroup = new THREE.Group();
-        const railMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
-        
-        // Rails
-        for (let i = 0; i < 2; i++) {
-            const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 5), railMaterial);
-            rail.position.set(i * 0.5 - 0.25, 2.5, 0);
-            ladderGroup.add(rail);
-        }
-
-        // Rungs
-        for (let i = 0; i < 10; i++) {
-            const rung = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.5), railMaterial);
-            rung.rotation.z = Math.PI / 2;
-            rung.position.set(0, i * 0.5, 0);
-            ladderGroup.add(rung);
-        }
-
-        ladderGroup.position.set(9.5, 0, -8);
-        this.scene.add(ladderGroup);
-        this.ladder = ladderGroup;
-    }
-
-    createLetterbox() {
-        const letterboxGroup = new THREE.Group();
-        
-        // Mailbox body
-        const bodyGeometry = new THREE.BoxGeometry(0.6, 0.4, 0.4);
-        const bodyMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0xff6b8b, 
-            roughness: 0.3,
-            metalness: 0.7
-        });
-        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-        body.castShadow = true;
-        letterboxGroup.add(body);
+        const postbox = new THREE.Mesh(boxGeom, boxMat);
+        postbox.position.set(3, 8.7, 3);
+        postbox.castShadow = true;
+        this.scene.add(postbox);
 
         // Flag
-        const flagGeometry = new THREE.BoxGeometry(0.05, 0.2, 0.15);
-        const flagMaterial = new THREE.MeshStandardMaterial({ color: 0xffcc00 });
-        const flag = new THREE.Mesh(flagGeometry, flagMaterial);
-        flag.position.set(0.35, 0.15, 0);
-        letterboxGroup.add(flag);
+        const flagGeom = new THREE.BoxGeometry(0.5, 0.1, 0.05);
+        const flagMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const flag = new THREE.Mesh(flagGeom, flagMat);
+        flag.position.set(3.5, 9.2, 3);
+        this.scene.add(flag);
 
-        // Bird decoration
-        const birdGeometry = new THREE.SphereGeometry(0.1, 8, 8);
-        const birdMaterial = new THREE.MeshStandardMaterial({ color: 0xffaaaa });
-        const bird = new THREE.Mesh(birdGeometry, birdMaterial);
-        bird.position.set(0, 0.3, 0);
-        letterboxGroup.add(bird);
-
-        letterboxGroup.position.set(0, 9, 0);
-        this.scene.add(letterboxGroup);
-        this.letterbox = letterboxGroup;
-
-        // Make interactive
+        // Interactive
         this.interactiveObjects.push({
-            object: letterboxGroup,
-            type: 'letterbox',
-            name: 'Love Letters',
-            description: 'Read a special message',
-            onInteract: () => this.openLetterModal()
+            object: postbox,
+            name: 'Love Letter Box',
+            desc: 'Read your custom letter',
+            action: () => this.openCustomLetter()
         });
     }
 
-    createDecorations() {
-        // Floating hearts
-        for (let i = 0; i < 15; i++) {
-            const heartGeometry = new THREE.SphereGeometry(0.1, 8, 8);
-            const heartMaterial = new THREE.MeshBasicMaterial({
-                color: 0xff6b8b,
+    createCandles() {
+        // Place candles around the room
+        const candlePositions = [
+            [-8, 0.6, -8], [8, 0.6, -8], [-8, 0.6, 8], [8, 0.6, 8],
+            [-3, 0.6, -9], [3, 0.6, -9], [-9, 0.6, -3], [-9, 0.6, 3],
+            [9, 0.6, -3], [9, 0.6, 3], [0, 0.6, 8], [-5, 0.6, 0], [5, 0.6, 0]
+        ];
+
+        candlePositions.forEach(pos => {
+            // Candle body
+            const candleGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.3, 8);
+            const candleMat = new THREE.MeshStandardMaterial({ color: 0xfff8dc });
+            const candle = new THREE.Mesh(candleGeom, candleMat);
+            candle.position.set(pos[0], pos[1], pos[2]);
+            candle.castShadow = true;
+            this.scene.add(candle);
+
+            // Flame (point light)
+            const flame = new THREE.PointLight(0xff9944, 1.5, 5);
+            flame.position.set(pos[0], pos[1] + 0.2, pos[2]);
+            flame.castShadow = true;
+            this.scene.add(flame);
+
+            // Animated glow
+            this.candles.push({ light: flame, baseY: pos[1] + 0.2 });
+        });
+    }
+
+    createPlanetsAndStars() {
+        // Planets floating in space
+        const planetData = [
+            { pos: [40, 25, -70], radius: 3, color: 0xff8844, speed: 0.0005 },
+            { pos: [-50, 30, -80], radius: 4, color: 0x4488ff, speed: 0.0003 },
+            { pos: [60, 35, 50], radius: 2.5, color: 0xff44aa, speed: 0.0007 },
+            { pos: [-40, 20, 60], radius: 3.5, color: 0x88ff44, speed: 0.0004 }
+        ];
+
+        planetData.forEach(data => {
+            const planetGeom = new THREE.SphereGeometry(data.radius, 32, 32);
+            const planetMat = new THREE.MeshStandardMaterial({ 
+                color: data.color,
+                emissive: data.color,
+                emissiveIntensity: 0.4
+            });
+            const planet = new THREE.Mesh(planetGeom, planetMat);
+            planet.position.set(data.pos[0], data.pos[1], data.pos[2]);
+            this.scene.add(planet);
+            this.planets.push({ mesh: planet, speed: data.speed, angle: Math.random() * Math.PI * 2 });
+        });
+
+        // Shooting stars
+        this.createShootingStarSystem();
+    }
+
+    createShootingStarSystem() {
+        // Create shooting stars periodically
+        setInterval(() => {
+            if (!this.state.started || this.state.paused) return;
+            
+            const startX = (Math.random() - 0.5) * 200;
+            const startY = 40 + Math.random() * 30;
+            const startZ = (Math.random() - 0.5) * 200;
+
+            const geometry = new THREE.BufferGeometry();
+            const positions = [];
+            for (let i = 0; i < 30; i++) {
+                positions.push(0, 0, 0);
+            }
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            
+            const material = new THREE.LineBasicMaterial({ 
+                color: 0xffff88,
                 transparent: true,
-                opacity: 0.6
+                opacity: 0.8
             });
-            const heart = new THREE.Mesh(heartGeometry, heartMaterial);
-            heart.position.set(
-                (Math.random() - 0.5) * 20,
-                Math.random() * 6 + 1,
-                (Math.random() - 0.5) * 20
+            const trail = new THREE.Line(geometry, material);
+            trail.position.set(startX, startY, startZ);
+
+            const velocity = new THREE.Vector3(
+                (Math.random() - 0.5) * 0.5,
+                -(0.3 + Math.random() * 0.3),
+                (Math.random() - 0.5) * 0.5
             );
-            this.scene.add(heart);
-            
-            // Animate
-            this.animations.push({
-                object: heart,
-                type: 'float',
-                speed: 0.5 + Math.random(),
-                offset: Math.random() * Math.PI * 2
+
+            this.scene.add(trail);
+            this.shootingStars.push({ 
+                mesh: trail, 
+                velocity, 
+                lifetime: 0,
+                maxLifetime: 100 
             });
-        }
+        }, 3000 + Math.random() * 7000);
+    }
 
-        // Candles
-        for (let i = 0; i < 8; i++) {
-            const angle = (i / 8) * Math.PI * 2;
-            const radius = 6;
-            const candleGroup = new THREE.Group();
-            
-            const candleBody = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.08, 0.1, 0.5, 8),
-                new THREE.MeshStandardMaterial({ color: 0xffeedd, roughness: 0.6 })
+    createSpaceCreatures() {
+        // Birds
+        for (let i = 0; i < 80; i++) {
+            const birdGeom = new THREE.ConeGeometry(0.15, 0.4, 4);
+            const birdMat = new THREE.MeshStandardMaterial({ 
+                color: 0xffffff,
+                emissive: 0x8888ff,
+                emissiveIntensity: 0.3
+            });
+            const bird = new THREE.Mesh(birdGeom, birdMat);
+            bird.position.set(
+                (Math.random() - 0.5) * 100,
+                10 + Math.random() * 40,
+                (Math.random() - 0.5) * 100
             );
-            candleBody.position.y = 0.25;
-            candleBody.castShadow = true;
-            candleGroup.add(candleBody);
-
-            const flame = new THREE.PointLight(0xffaa55, 1, 3);
-            flame.position.y = 0.6;
-            candleGroup.add(flame);
-
-            candleGroup.position.set(
-                Math.cos(angle) * radius,
-                0,
-                Math.sin(angle) * radius
-            );
-            this.scene.add(candleGroup);
-
-            // Animate flame flicker
-            this.animations.push({
-                object: flame,
-                type: 'flicker',
-                baseIntensity: 1,
-                speed: 2 + Math.random()
+            bird.rotation.x = Math.PI / 2;
+            this.scene.add(bird);
+            this.birds.push({ 
+                mesh: bird, 
+                speed: 0.02 + Math.random() * 0.03,
+                angle: Math.random() * Math.PI * 2,
+                radius: 20 + Math.random() * 30,
+                height: bird.position.y
             });
         }
-    }
 
-    // ══════════════════════════════════════════════════════════════════
-    // ENHANCED SKY SYSTEM
-    // ══════════════════════════════════════════════════════════════════
-    createEnhancedSky() {
-        // Starfield with better distribution
-        const starsGeometry = new THREE.BufferGeometry();
-        const starCount = 3000;
-        const positions = new Float32Array(starCount * 3);
-        const colors = new Float32Array(starCount * 3);
-        const sizes = new Float32Array(starCount);
-
-        for (let i = 0; i < starCount; i++) {
-            // Spherical distribution
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.acos(Math.random() * 2 - 1);
-            const radius = 100 + Math.random() * 100;
-
-            positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-            positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-            positions[i * 3 + 2] = radius * Math.cos(phi);
-
-            // Color variation (white to blue-white)
-            const colorVariation = 0.8 + Math.random() * 0.2;
-            colors[i * 3] = colorVariation;
-            colors[i * 3 + 1] = colorVariation;
-            colors[i * 3 + 2] = 1;
-
-            sizes[i] = 1 + Math.random() * 2;
+        // Fish
+        for (let i = 0; i < 60; i++) {
+            const fishGeom = new THREE.SphereGeometry(0.2, 8, 8);
+            fishGeom.scale(1.5, 1, 1);
+            const fishMat = new THREE.MeshStandardMaterial({ 
+                color: 0x44aaff,
+                emissive: 0x2266ff,
+                emissiveIntensity: 0.4
+            });
+            const fish = new THREE.Mesh(fishGeom, fishMat);
+            fish.position.set(
+                (Math.random() - 0.5) * 120,
+                5 + Math.random() * 30,
+                (Math.random() - 0.5) * 120
+            );
+            this.scene.add(fish);
+            this.fish.push({ 
+                mesh: fish, 
+                speed: 0.015 + Math.random() * 0.02,
+                angle: Math.random() * Math.PI * 2,
+                radius: 25 + Math.random() * 35,
+                height: fish.position.y
+            });
         }
 
-        starsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        starsGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-        starsGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-
-        const starsMaterial = new THREE.PointsMaterial({
-            size: 1.5,
-            sizeAttenuation: true,
-            vertexColors: true,
-            transparent: true,
-            opacity: 0.8,
-            blending: THREE.AdditiveBlending
-        });
-
-        const stars = new THREE.Points(starsGeometry, starsMaterial);
-        this.scene.add(stars);
-        this.stars = stars;
-
-        // Moon
-        const moonGeometry = new THREE.SphereGeometry(8, 32, 32);
-        const moonMaterial = new THREE.MeshBasicMaterial({
-            color: 0xffffee,
-            emissive: 0xffffee,
-            emissiveIntensity: 0.4
-        });
-        const moon = new THREE.Mesh(moonGeometry, moonMaterial);
-        moon.position.set(50, 60, -80);
-        this.scene.add(moon);
-
-        // Moon glow
-        const glowGeometry = new THREE.SphereGeometry(9, 32, 32);
-        const glowMaterial = new THREE.MeshBasicMaterial({
-            color: 0xffffee,
-            transparent: true,
-            opacity: 0.2,
-            blending: THREE.AdditiveBlending
-        });
-        const moonGlow = new THREE.Mesh(glowGeometry, glowMaterial);
-        moonGlow.position.copy(moon.position);
-        this.scene.add(moonGlow);
-
-        // Animate stars twinkling
-        this.animations.push({
-            object: stars,
-            type: 'twinkle',
-            speed: 1
-        });
+        // Stingrays
+        for (let i = 0; i < 30; i++) {
+            const rayGeom = new THREE.BoxGeometry(1, 0.1, 0.6);
+            const rayMat = new THREE.MeshStandardMaterial({ 
+                color: 0xff88cc,
+                emissive: 0xff44aa,
+                emissiveIntensity: 0.3
+            });
+            const ray = new THREE.Mesh(rayGeom, rayMat);
+            ray.position.set(
+                (Math.random() - 0.5) * 100,
+                15 + Math.random() * 25,
+                (Math.random() - 0.5) * 100
+            );
+            this.scene.add(ray);
+            this.stingrays.push({ 
+                mesh: ray, 
+                speed: 0.01 + Math.random() * 0.015,
+                angle: Math.random() * Math.PI * 2,
+                radius: 30 + Math.random() * 40,
+                height: ray.position.y,
+                wobble: 0
+            });
+        }
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    // ENHANCED CREATURES - Instanced for Performance
-    // ══════════════════════════════════════════════════════════════════
-    createEnhancedBirds() {
-        const birdCount = 60; // Increased from typical
-        const birdGeometry = new THREE.ConeGeometry(0.15, 0.4, 4);
-        const birdMaterial = new THREE.MeshStandardMaterial({
-            color: 0xffccee,
-            emissive: 0xff88cc,
-            emissiveIntensity: 0.2
-        });
-
-        // Use instanced mesh for performance
-        const instancedBirds = new THREE.InstancedMesh(birdGeometry, birdMaterial, birdCount);
-        const dummy = new THREE.Object3D();
-
-        for (let i = 0; i < birdCount; i++) {
-            const bird = {
-                position: new THREE.Vector3(
-                    (Math.random() - 0.5) * 60,
-                    10 + Math.random() * 30,
-                    (Math.random() - 0.5) * 60
-                ),
-                velocity: new THREE.Vector3(
-                    (Math.random() - 0.5) * 0.05,
-                    (Math.random() - 0.5) * 0.02,
-                    (Math.random() - 0.5) * 0.05
-                ),
-                phase: Math.random() * Math.PI * 2,
-                speed: 0.5 + Math.random()
-            };
-
-            dummy.position.copy(bird.position);
-            dummy.updateMatrix();
-            instancedBirds.setMatrixAt(i, dummy.matrix);
-
-            this.birds.push(bird);
-        }
-
-        this.scene.add(instancedBirds);
-        this.instancedBirds = instancedBirds;
-    }
-
-    createEnhancedFish() {
-        const fishCount = 40;
-        const fishGeometry = new THREE.BoxGeometry(0.3, 0.15, 0.6);
-        const fishMaterial = new THREE.MeshStandardMaterial({
-            color: 0x88ccff,
-            emissive: 0x4488cc,
-            emissiveIntensity: 0.3,
-            transparent: true,
-            opacity: 0.7
-        });
-
-        const instancedFish = new THREE.InstancedMesh(fishGeometry, fishMaterial, fishCount);
-        const dummy = new THREE.Object3D();
-
-        for (let i = 0; i < fishCount; i++) {
-            const fish = {
-                position: new THREE.Vector3(
-                    (Math.random() - 0.5) * 40,
-                    3 + Math.random() * 4,
-                    (Math.random() - 0.5) * 40
-                ),
-                velocity: new THREE.Vector3(
-                    (Math.random() - 0.5) * 0.04,
-                    (Math.random() - 0.5) * 0.01,
-                    (Math.random() - 0.5) * 0.04
-                ),
-                phase: Math.random() * Math.PI * 2,
-                speed: 0.3 + Math.random() * 0.5
-            };
-
-            dummy.position.copy(fish.position);
-            dummy.updateMatrix();
-            instancedFish.setMatrixAt(i, dummy.matrix);
-
-            this.fish.push(fish);
-        }
-
-        this.scene.add(instancedFish);
-        this.instancedFish = instancedFish;
-    }
-
-    // ══════════════════════════════════════════════════════════════════
-    // ENHANCED PARTICLE SYSTEM
-    // ══════════════════════════════════════════════════════════════════
-    createEnhancedParticles() {
-        if (!this.state.settings.particles) return;
-
-        // Cherry blossom petals
-        const petalCount = 200;
-        const petalGeometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(petalCount * 3);
-        const velocities = new Float32Array(petalCount * 3);
-
-        for (let i = 0; i < petalCount; i++) {
-            positions[i * 3] = (Math.random() - 0.5) * 40;
-            positions[i * 3 + 1] = Math.random() * 15;
-            positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
-
-            velocities[i * 3] = (Math.random() - 0.5) * 0.02;
-            velocities[i * 3 + 1] = -0.01 - Math.random() * 0.02;
-            velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.02;
-        }
-
-        petalGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    createEnhancedParticleSystems() {
+        // Snowflakes outside only
+        this.createSnowflakes();
         
-        const petalMaterial = new THREE.PointsMaterial({
+        // Dust particles inside
+        this.createDustParticles();
+    }
+
+    createSnowflakes() {
+        const snowCount = 500;
+        const snowGeom = new THREE.BufferGeometry();
+        const snowPositions = [];
+        
+        for (let i = 0; i < snowCount; i++) {
+            const x = (Math.random() - 0.5) * 200;
+            const y = Math.random() * 100;
+            const z = (Math.random() - 0.5) * 200;
+            
+            // Only create snow outside the house bounds
+            if (Math.abs(x) > 12 || Math.abs(z) > 12 || y > 10) {
+                snowPositions.push(x, y, z);
+            }
+        }
+        
+        snowGeom.setAttribute('position', new THREE.Float32BufferAttribute(snowPositions, 3));
+        const snowMat = new THREE.PointsMaterial({ 
+            color: 0xffffff, 
             size: 0.15,
-            color: 0xffccee,
-            transparent: true,
-            opacity: 0.7,
-            blending: THREE.AdditiveBlending,
-            map: this.createPetalTexture()
-        });
-
-        const petals = new THREE.Points(petalGeometry, petalMaterial);
-        this.scene.add(petals);
-        this.petals = petals;
-        this.petalVelocities = velocities;
-
-        // Sparkles
-        const sparkleCount = 100;
-        const sparkleGeometry = new THREE.BufferGeometry();
-        const sparklePositions = new Float32Array(sparkleCount * 3);
-
-        for (let i = 0; i < sparkleCount; i++) {
-            sparklePositions[i * 3] = (Math.random() - 0.5) * 30;
-            sparklePositions[i * 3 + 1] = Math.random() * 8;
-            sparklePositions[i * 3 + 2] = (Math.random() - 0.5) * 30;
-        }
-
-        sparkleGeometry.setAttribute('position', new THREE.BufferAttribute(sparklePositions, 3));
-        
-        const sparkleMaterial = new THREE.PointsMaterial({
-            size: 0.1,
-            color: 0xffffaa,
-            transparent: true,
-            opacity: 0.8,
-            blending: THREE.AdditiveBlending
-        });
-
-        const sparkles = new THREE.Points(sparkleGeometry, sparkleMaterial);
-        this.scene.add(sparkles);
-        this.sparkles = sparkles;
-    }
-
-    createPetalTexture() {
-        const canvas = document.createElement('canvas');
-        canvas.width = 32;
-        canvas.height = 32;
-        const ctx = canvas.getContext('2d');
-        
-        const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-        gradient.addColorStop(0, 'rgba(255, 204, 238, 1)');
-        gradient.addColorStop(0.5, 'rgba(255, 204, 238, 0.5)');
-        gradient.addColorStop(1, 'rgba(255, 204, 238, 0)');
-        
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 32, 32);
-        
-        const texture = new THREE.CanvasTexture(canvas);
-        return texture;
-    }
-
-    // ══════════════════════════════════════════════════════════════════
-    // GARDEN GROWTH SYSTEM (VS Code Style)
-    // ══════════════════════════════════════════════════════════════════
-    initGardenSystem() {
-        this.loadGardenProgress();
-        this.updateGardenVisuals();
-    }
-
-    loadGardenProgress() {
-        const saved = localStorage.getItem('tanmai_garden_progress');
-        if (saved) {
-            const data = JSON.parse(saved);
-            this.state.gardenLevel = data.level || 1;
-            this.state.gardenXP = data.xp || 0;
-            this.state.dailyStreak = data.streak || 0;
-        }
-    }
-
-    saveGardenProgress() {
-        const data = {
-            level: this.state.gardenLevel,
-            xp: this.state.gardenXP,
-            streak: this.state.dailyStreak,
-            lastVisit: Date.now()
-        };
-        localStorage.setItem('tanmai_garden_progress', JSON.stringify(data));
-    }
-
-    addGardenXP(amount) {
-        this.state.gardenXP += amount;
-        
-        // Check for level up
-        const currentStage = this.gardenStages.find(s => s.level === this.state.gardenLevel);
-        const nextStage = this.gardenStages.find(s => s.level === this.state.gardenLevel + 1);
-        
-        if (nextStage && this.state.gardenXP >= nextStage.xpNeeded) {
-            this.levelUpGarden();
-        }
-        
-        this.updateGardenVisuals();
-        this.saveGardenProgress();
-    }
-
-    levelUpGarden() {
-        this.state.gardenLevel++;
-        this.showNotification(`🌟 Garden Level Up! ${this.gardenStages[this.state.gardenLevel - 1].name}`);
-        this.triggerLevelUpEffect();
-    }
-
-    updateGardenVisuals() {
-        if (!this.bonsaiCanopy) return;
-        
-        const stage = this.gardenStages[this.state.gardenLevel - 1];
-        if (!stage) return;
-
-        // Animate scale change
-        this.animateScale(this.bonsaiCanopy, stage.scale, 2000);
-        
-        // Update color
-        this.bonsaiCanopy.material.color.setHex(stage.color);
-        this.bonsaiCanopy.material.emissive.setHex(stage.color);
-        this.bonsaiCanopy.material.emissiveIntensity = 0.2 + (this.state.gardenLevel * 0.05);
-
-        // Update HUD
-        const levelDisplay = document.getElementById('garden-level');
-        if (levelDisplay) {
-            levelDisplay.textContent = stage.name;
-        }
-    }
-
-    triggerLevelUpEffect() {
-        // Particle burst
-        const burstCount = 50;
-        const burstGeometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(burstCount * 3);
-        
-        const bonsaiPos = this.bonsaiGroup.position;
-        
-        for (let i = 0; i < burstCount; i++) {
-            positions[i * 3] = bonsaiPos.x;
-            positions[i * 3 + 1] = bonsaiPos.y + 1.5;
-            positions[i * 3 + 2] = bonsaiPos.z;
-        }
-        
-        burstGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        
-        const burstMaterial = new THREE.PointsMaterial({
-            size: 0.2,
-            color: 0xffaa00,
-            transparent: true,
-            opacity: 1,
-            blending: THREE.AdditiveBlending
-        });
-        
-        const burst = new THREE.Points(burstGeometry, burstMaterial);
-        this.scene.add(burst);
-        
-        // Animate burst
-        let life = 0;
-        const animate = () => {
-            life += 0.02;
-            if (life > 1) {
-                this.scene.remove(burst);
-                return;
-            }
-            
-            const positions = burst.geometry.attributes.position.array;
-            for (let i = 0; i < burstCount; i++) {
-                positions[i * 3] += (Math.random() - 0.5) * 0.1;
-                positions[i * 3 + 1] += 0.05;
-                positions[i * 3 + 2] += (Math.random() - 0.5) * 0.1;
-            }
-            burst.geometry.attributes.position.needsUpdate = true;
-            burst.material.opacity = 1 - life;
-            
-            requestAnimationFrame(animate);
-        };
-        animate();
-    }
-
-    // ══════════════════════════════════════════════════════════════════
-    // MUSIC SYSTEM
-    // ══════════════════════════════════════════════════════════════════
-    initMusicPlayer() {
-        // Create audio context
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        this.analyser = this.audioContext.createAnalyser();
-        this.analyser.fftSize = 256;
-        this.audioDataArray = new Uint8Array(this.analyser.frequencyBinCount);
-
-        // Setup controls
-        const playBtn = document.getElementById('mp-play');
-        const prevBtn = document.getElementById('mp-prev');
-        const nextBtn = document.getElementById('mp-next');
-        const volumeSlider = document.getElementById('mp-volume');
-        const progressBar = document.getElementById('mp-progress-bar');
-
-        if (playBtn) playBtn.addEventListener('click', () => this.toggleMusic());
-        if (prevBtn) prevBtn.addEventListener('click', () => this.prevTrack());
-        if (nextBtn) nextBtn.addEventListener('click', () => this.nextTrack());
-        if (volumeSlider) volumeSlider.addEventListener('input', (e) => this.setVolume(e.target.value / 100));
-        if (progressBar) progressBar.addEventListener('click', (e) => this.seekMusic(e));
-
-        this.currentTrack = 0;
-        this.musicPlaying = false;
-    }
-
-    initMusicVisualizer() {
-        // Create visualizer bars
-        const visualizerContainer = document.getElementById('music-visualizer');
-        if (!visualizerContainer) return;
-
-        this.visualizerBars = [];
-        const barCount = 32;
-        
-        for (let i = 0; i < barCount; i++) {
-            const bar = document.createElement('div');
-            bar.className = 'visualizer-bar';
-            visualizerContainer.appendChild(bar);
-            this.visualizerBars.push(bar);
-        }
-    }
-
-    updateMusicVisualizer() {
-        if (!this.state.musicVisualizerActive || !this.analyser) return;
-
-        this.analyser.getByteFrequencyData(this.audioDataArray);
-
-        const barCount = this.visualizerBars.length;
-        const step = Math.floor(this.audioDataArray.length / barCount);
-
-        for (let i = 0; i < barCount; i++) {
-            const value = this.audioDataArray[i * step];
-            const height = (value / 255) * 100;
-            if (this.visualizerBars[i]) {
-                this.visualizerBars[i].style.height = `${height}%`;
-            }
-        }
-    }
-
-    // ══════════════════════════════════════════════════════════════════
-    // SLIDESHOW SYSTEM
-    // ══════════════════════════════════════════════════════════════════
-    initSlideshow() {
-        this.loadImage(this.tanImages[0], (texture) => {
-            if (this.tvScreen) {
-                this.tvScreen.material.map = texture;
-                this.tvScreen.material.needsUpdate = true;
-            }
-        });
-
-        this.loadImage(this.bigPortrait, (texture) => {
-            if (this.portrait) {
-                this.portrait.material.map = texture;
-                this.portrait.material.needsUpdate = true;
-            }
-        });
-    }
-
-    cycleSlideshow() {
-        this.state.slideshowIndex = (this.state.slideshowIndex + 1) % this.tanImages.length;
-        this.loadImage(this.tanImages[this.state.slideshowIndex], (texture) => {
-            if (this.tvScreen) {
-                this.tvScreen.material.map = texture;
-                this.tvScreen.material.needsUpdate = true;
-            }
-        });
-        this.showNotification('📺 Next memory');
-    }
-
-    loadImage(url, callback) {
-        const loader = new THREE.TextureLoader();
-        loader.load(
-            url,
-            callback,
-            undefined,
-            () => console.warn('Failed to load image:', url)
-        );
-    }
-
-    // ══════════════════════════════════════════════════════════════════
-    // FLASHLIGHT & PHOTO MODE
-    // ══════════════════════════════════════════════════════════════════
-    initFlashlight() {
-        const flashlight = new THREE.SpotLight(0xffffff, 2, 20, Math.PI / 6, 0.5, 1);
-        flashlight.castShadow = false;
-        flashlight.visible = false;
-        this.camera.add(flashlight);
-        this.flashlightObj = flashlight;
-    }
-
-    toggleFlashlight() {
-        this.state.flashlight = !this.state.flashlight;
-        if (this.flashlightObj) {
-            this.flashlightObj.visible = this.state.flashlight;
-        }
-        this.showNotification(this.state.flashlight ? '🔦 Flashlight ON' : '🔦 Flashlight OFF');
-    }
-
-    initPhotoMode() {
-        // Photo mode will freeze game and add filters
-    }
-
-    togglePhotoMode() {
-        this.state.photoMode = !this.state.photoMode;
-        
-        if (this.state.photoMode) {
-            this.state.paused = true;
-            document.getElementById('crosshair')?.classList.add('hidden');
-            this.showNotification('📸 Photo Mode - Use number keys for filters');
-        } else {
-            this.state.paused = false;
-            document.getElementById('crosshair')?.classList.remove('hidden');
-        }
-    }
-
-    cyclePhotoFilter() {
-        this.state.photoFilter = (this.state.photoFilter + 1) % this.photoFilters.length;
-        const filter = this.photoFilters[this.state.photoFilter];
-        
-        const canvas = document.getElementById('game-canvas');
-        if (canvas) {
-            canvas.style.filter = filter.css;
-        }
-        
-        this.showNotification(`📸 ${filter.name}`);
-    }
-
-    // ══════════════════════════════════════════════════════════════════
-    // GAME LOOP & UPDATES
-    // ══════════════════════════════════════════════════════════════════
-    gameLoop() {
-        requestAnimationFrame(() => this.gameLoop());
-
-        if (!this.state.loaded) return;
-
-        this.delta = this.clock.getDelta();
-        
-        if (!this.state.paused && this.state.started) {
-            this.updatePlayer();
-            this.updateAnimations();
-            this.updateBirds();
-            this.updateFish();
-            this.updateParticles();
-            this.updateInteractions();
-            this.updateMusicVisualizer();
-        }
-
-        this.render();
-    }
-
-    updatePlayer() {
-        if (!this.state.player.canMove) return;
-
-        const speed = this.state.player.speed;
-        const camera = this.camera;
-
-        // Movement
-        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-        const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-        
-        forward.y = 0;
-        forward.normalize();
-        right.y = 0;
-        right.normalize();
-
-        if (this.keys['w'] || this.keys['W']) this.state.player.pos.add(forward.multiplyScalar(speed));
-        if (this.keys['s'] || this.keys['S']) this.state.player.pos.add(forward.multiplyScalar(-speed));
-        if (this.keys['a'] || this.keys['A']) this.state.player.pos.add(right.multiplyScalar(-speed));
-        if (this.keys['d'] || this.keys['D']) this.state.player.pos.add(right.multiplyScalar(speed));
-
-        // Gravity and jumping
-        if (this.keys[' '] && this.state.player.canJump) {
-            this.physVelY = this.state.player.jumpPower;
-            this.state.player.canJump = false;
-        }
-
-        this.physVelY -= 0.006; // Gravity
-        this.state.player.pos.y += this.physVelY;
-
-        if (this.state.player.pos.y <= 1.6) {
-            this.state.player.pos.y = 1.6;
-            this.physVelY = 0;
-            this.state.player.canJump = true;
-        }
-
-        // Boundaries
-        this.state.player.pos.x = Math.max(-24, Math.min(24, this.state.player.pos.x));
-        this.state.player.pos.z = Math.max(-24, Math.min(24, this.state.player.pos.z));
-
-        // Update camera position
-        this.camera.position.copy(this.state.player.pos);
-    }
-
-    updateAnimations() {
-        const time = Date.now() * 0.001;
-
-        this.animations.forEach(anim => {
-            switch (anim.type) {
-                case 'float':
-                    anim.object.position.y += Math.sin(time * anim.speed + anim.offset) * 0.002;
-                    break;
-                case 'flicker':
-                    anim.object.intensity = anim.baseIntensity + Math.sin(time * anim.speed) * 0.3;
-                    break;
-                case 'twinkle':
-                    // Handled in updateParticles
-                    break;
-            }
-        });
-    }
-
-    updateBirds() {
-        if (!this.instancedBirds) return;
-
-        const dummy = new THREE.Object3D();
-        const time = Date.now() * 0.001;
-
-        this.birds.forEach((bird, i) => {
-            // Update position
-            bird.position.add(bird.velocity);
-
-            // Sine wave motion
-            bird.position.y += Math.sin(time * bird.speed + bird.phase) * 0.02;
-
-            // Boundary wrapping
-            if (Math.abs(bird.position.x) > 30) bird.position.x *= -0.9;
-            if (Math.abs(bird.position.z) > 30) bird.position.z *= -0.9;
-            if (bird.position.y > 40) bird.position.y = 10;
-            if (bird.position.y < 10) bird.position.y = 40;
-
-            // Update instance
-            dummy.position.copy(bird.position);
-            dummy.lookAt(
-                bird.position.x + bird.velocity.x * 10,
-                bird.position.y + bird.velocity.y * 10,
-                bird.position.z + bird.velocity.z * 10
-            );
-            dummy.updateMatrix();
-            this.instancedBirds.setMatrixAt(i, dummy.matrix);
-        });
-
-        this.instancedBirds.instanceMatrix.needsUpdate = true;
-    }
-
-    updateFish() {
-        if (!this.instancedFish) return;
-
-        const dummy = new THREE.Object3D();
-        const time = Date.now() * 0.001;
-
-        this.fish.forEach((fish, i) => {
-            // Update position
-            fish.position.add(fish.velocity);
-
-            // Sine wave motion
-            fish.position.y += Math.sin(time * fish.speed + fish.phase) * 0.01;
-
-            // Boundary wrapping
-            if (Math.abs(fish.position.x) > 20) fish.position.x *= -0.9;
-            if (Math.abs(fish.position.z) > 20) fish.position.z *= -0.9;
-            if (fish.position.y > 7) fish.position.y = 3;
-            if (fish.position.y < 3) fish.position.y = 7;
-
-            // Update instance
-            dummy.position.copy(fish.position);
-            dummy.lookAt(
-                fish.position.x + fish.velocity.x * 10,
-                fish.position.y,
-                fish.position.z + fish.velocity.z * 10
-            );
-            dummy.updateMatrix();
-            this.instancedFish.setMatrixAt(i, dummy.matrix);
-        });
-
-        this.instancedFish.instanceMatrix.needsUpdate = true;
-    }
-
-    updateParticles() {
-        // Update petals
-        if (this.petals) {
-            const positions = this.petals.geometry.attributes.position.array;
-            
-            for (let i = 0; i < positions.length / 3; i++) {
-                positions[i * 3] += this.petalVelocities[i * 3];
-                positions[i * 3 + 1] += this.petalVelocities[i * 3 + 1];
-                positions[i * 3 + 2] += this.petalVelocities[i * 3 + 2];
-
-                // Reset when falling too low
-                if (positions[i * 3 + 1] < 0) {
-                    positions[i * 3 + 1] = 15;
-                    positions[i * 3] = (Math.random() - 0.5) * 40;
-                    positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
-                }
-            }
-
-            this.petals.geometry.attributes.position.needsUpdate = true;
-        }
-
-        // Update stars twinkling
-        if (this.stars) {
-            this.stars.rotation.y += 0.0001;
-        }
-
-        // Update sparkles
-        if (this.sparkles) {
-            this.sparkles.rotation.y += 0.002;
-        }
-    }
-
-    updateInteractions() {
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
-
-        let closestInteractive = null;
-        let closestDistance = 5; // Max interaction distance
-
-        this.interactiveObjects.forEach(item => {
-            const intersects = raycaster.intersectObject(item.object, true);
-            if (intersects.length > 0 && intersects[0].distance < closestDistance) {
-                closestDistance = intersects[0].distance;
-                closestInteractive = item;
-            }
-        });
-
-        if (closestInteractive !== this._currentInteractive) {
-            this._currentInteractive = closestInteractive;
-            this.updateInteractHint();
-        }
-    }
-
-    updateInteractHint() {
-        const hint = document.getElementById('interact-hint');
-        if (!hint) return;
-
-        if (this._currentInteractive) {
-            hint.style.display = 'flex';
-            document.getElementById('interact-text').textContent = this._currentInteractive.name;
-            document.getElementById('interact-desc').textContent = this._currentInteractive.description;
-        } else {
-            hint.style.display = 'none';
-        }
-    }
-
-    render() {
-        if (this.composer && this.state.settings.bloom) {
-            this.composer.render();
-        } else {
-            this.renderer.render(this.scene, this.camera);
-        }
-    }
-
-    // ══════════════════════════════════════════════════════════════════
-    // EVENT HANDLERS
-    // ══════════════════════════════════════════════════════════════════
-    setupEvents() {
-        // Keyboard
-        window.addEventListener('keydown', (e) => this.onKeyDown(e));
-        window.addEventListener('keyup', (e) => this.onKeyUp(e));
-
-        // Mouse
-        window.addEventListener('mousemove', (e) => this.onMouseMove(e));
-        window.addEventListener('click', () => this.onClick());
-
-        // UI Buttons
-        document.getElementById('btn-start')?.addEventListener('click', () => this.startGame());
-        document.getElementById('btn-resume')?.addEventListener('click', () => this.resumeGame());
-        document.getElementById('btn-quit')?.addEventListener('click', () => this.quitToMenu());
-        document.getElementById('btn-water')?.addEventListener('click', () => this.waterPlant());
-        document.querySelectorAll('.modal-x').forEach(btn => {
-            btn.addEventListener('click', (e) => this.closeModal(e.target.closest('.modal')));
-        });
-
-        // Window resize
-        window.addEventListener('resize', () => this.onResize());
-
-        // Pointer lock
-        document.getElementById('game-canvas').addEventListener('click', () => {
-            if (this.state.started && !this.state.paused) {
-                document.getElementById('game-canvas').requestPointerLock();
-            }
-        });
-
-        document.addEventListener('pointerlockchange', () => {
-            this.state.player.canMove = document.pointerLockElement === document.getElementById('game-canvas');
-        });
-    }
-
-    onKeyDown(e) {
-        this.keys[e.key] = true;
-
-        // ESC - Pause
-        if (e.key === 'Escape') {
-            e.preventDefault();
-            if (this.state.started) this.togglePause();
-        }
-
-        // E - Interact
-        if (e.key === 'e' || e.key === 'E') {
-            if (this._currentInteractive && this.state.started && !this.state.paused) {
-                this._currentInteractive.onInteract();
-            }
-        }
-
-        // F - Flashlight
-        if (e.key === 'f' || e.key === 'F') {
-            this.toggleFlashlight();
-        }
-
-        // P - Photo mode
-        if (e.key === 'p' || e.key === 'P') {
-            this.togglePhotoMode();
-        }
-
-        // Number keys - Photo filters
-        if (this.state.photoMode && e.key >= '1' && e.key <= '6') {
-            this.state.photoFilter = parseInt(e.key) - 1;
-            const filter = this.photoFilters[this.state.photoFilter];
-            document.getElementById('game-canvas').style.filter = filter.css;
-            this.showNotification(`📸 ${filter.name}`);
-        }
-
-        // M - Music visualizer
-        if (e.key === 'm' || e.key === 'M') {
-            this.state.musicVisualizerActive = !this.state.musicVisualizerActive;
-        }
-    }
-
-    onKeyUp(e) {
-        this.keys[e.key] = false;
-    }
-
-    onMouseMove(e) {
-        if (!this.state.player.canMove) return;
-
-        const movementX = e.movementX || 0;
-        const movementY = e.movementY || 0;
-
-        this.camera.rotation.y -= movementX * this.state.settings.mouseSens;
-        this.camera.rotation.x -= movementY * this.state.settings.mouseSens;
-
-        // Clamp vertical rotation
-        this.camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.camera.rotation.x));
-    }
-
-    onClick() {
-        if (this._currentInteractive && this.state.started && !this.state.paused) {
-            this._currentInteractive.onInteract();
-        }
-    }
-
-    onResize() {
-        this.camera.aspect = window.innerWidth / window.innerHeight;
-        this.camera.updateProjectionMatrix();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        if (this.composer) {
-            this.composer.setSize(window.innerWidth, window.innerHeight);
-        }
-    }
-
-    // ══════════════════════════════════════════════════════════════════
-    // GAME STATE MANAGEMENT
-    // ══════════════════════════════════════════════════════════════════
-    startGame() {
-        this.state.started = true;
-        this.state.paused = false;
-        document.getElementById('main-menu')?.classList.add('hidden');
-        document.getElementById('hud')?.classList.remove('hidden');
-        document.getElementById('game-canvas').requestPointerLock();
-        this.showNotification('Welcome to your sanctuary, Tan ♥');
-        this.addGardenXP(10); // XP for visiting
-    }
-
-    togglePause() {
-        this.state.paused = !this.state.paused;
-        document.getElementById('pause-menu')?.classList.toggle('hidden');
-        if (!this.state.paused) {
-            document.getElementById('game-canvas').requestPointerLock();
-        } else {
-            document.exitPointerLock();
-        }
-    }
-
-    resumeGame() {
-        this.togglePause();
-    }
-
-    quitToMenu() {
-        this.state.started = false;
-        this.state.paused = false;
-        document.getElementById('pause-menu')?.classList.add('hidden');
-        document.getElementById('hud')?.classList.add('hidden');
-        document.getElementById('main-menu')?.classList.remove('hidden');
-        document.exitPointerLock();
-    }
-
-    // ══════════════════════════════════════════════════════════════════
-    // MODALS & UI
-    // ══════════════════════════════════════════════════════════════════
-    openPlantModal() {
-        document.getElementById('modal-plant')?.classList.remove('hidden');
-        this.state.paused = true;
-        document.exitPointerLock();
-    }
-
-    openLetterModal() {
-        const modal = document.getElementById('modal-letter');
-        if (!modal) return;
-
-        modal.classList.remove('hidden');
-        this.loadRandomLetter();
-        this.state.paused = true;
-        document.exitPointerLock();
-
-        if (!this.state.letterRead) {
-            this.state.letterRead = true;
-            setTimeout(() => this.triggerFireworks(), 1000);
-        }
-
-        this.addGardenXP(50); // XP for reading letter
-    }
-
-    closeModal(modal) {
-        if (modal) {
-            modal.classList.add('hidden');
-            this.state.paused = false;
-            if (this.state.started) {
-                document.getElementById('game-canvas').requestPointerLock();
-            }
-        }
-    }
-
-    loadRandomLetter() {
-        fetch('letters.json')
-            .then(r => r.json())
-            .then(letters => {
-                const letter = letters[Math.floor(Math.random() * letters.length)];
-                document.getElementById('letter-title-display').textContent = letter.title;
-                document.getElementById('letter-content-display').textContent = letter.content;
-                document.getElementById('letter-date-stamp').textContent = new Date(letter.date).toLocaleDateString();
-            })
-            .catch(() => {
-                document.getElementById('letter-content-display').textContent = 'My dearest Tan, you are my everything. ♥';
-            });
-    }
-
-    waterPlant() {
-        this.addGardenXP(20);
-        this.showNotification('💧 Bonsai watered! +20 XP');
-        this.closeModal(document.getElementById('modal-plant'));
-        
-        // Visual effect
-        this.createWaterEffect();
-    }
-
-    createWaterEffect() {
-        const dropletCount = 30;
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(dropletCount * 3);
-        
-        const bonsaiPos = this.bonsaiGroup.position;
-        
-        for (let i = 0; i < dropletCount; i++) {
-            positions[i * 3] = bonsaiPos.x + (Math.random() - 0.5) * 0.5;
-            positions[i * 3 + 1] = bonsaiPos.y + 2;
-            positions[i * 3 + 2] = bonsaiPos.z + (Math.random() - 0.5) * 0.5;
-        }
-        
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        
-        const material = new THREE.PointsMaterial({
-            size: 0.1,
-            color: 0x88ccff,
             transparent: true,
             opacity: 0.8
         });
-        
-        const droplets = new THREE.Points(geometry, material);
-        this.scene.add(droplets);
-        
-        // Animate
-        let life = 0;
-        const animate = () => {
-            life += 0.05;
-            if (life > 1) {
-                this.scene.remove(droplets);
-                return;
-            }
-            
-            const positions = droplets.geometry.attributes.position.array;
-            for (let i = 0; i < dropletCount; i++) {
-                positions[i * 3 + 1] -= 0.1;
-            }
-            droplets.geometry.attributes.position.needsUpdate = true;
-            droplets.material.opacity = 0.8 - (life * 0.8);
-            
-            requestAnimationFrame(animate);
-        };
-        animate();
+        const snow = new THREE.Points(snowGeom, snowMat);
+        this.scene.add(snow);
+        this.snowSystem = { mesh: snow, positions: snowPositions };
     }
 
-    triggerFireworks() {
-        if (this.state.fireworksActive) return;
-        this.state.fireworksActive = true;
-
-        const fireworksCount = 20;
-        for (let i = 0; i < fireworksCount; i++) {
-            setTimeout(() => this.createFirework(), i * 400);
+    createDustParticles() {
+        const dustCount = 200;
+        const dustGeom = new THREE.BufferGeometry();
+        const dustPositions = [];
+        
+        for (let i = 0; i < dustCount; i++) {
+            dustPositions.push(
+                (Math.random() - 0.5) * 20,
+                Math.random() * 5,
+                (Math.random() - 0.5) * 20
+            );
         }
-
-        this.showValentineMessage();
-    }
-
-    createFirework() {
-        const particleCount = 100;
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        const velocities = [];
-
-        const startPos = new THREE.Vector3(
-            (Math.random() - 0.5) * 30,
-            10 + Math.random() * 10,
-            (Math.random() - 0.5) * 30
-        );
-
-        for (let i = 0; i < particleCount; i++) {
-            positions[i * 3] = startPos.x;
-            positions[i * 3 + 1] = startPos.y;
-            positions[i * 3 + 2] = startPos.z;
-
-            velocities.push(new THREE.Vector3(
-                (Math.random() - 0.5) * 0.3,
-                (Math.random() - 0.5) * 0.3,
-                (Math.random() - 0.5) * 0.3
-            ));
-        }
-
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-        const colors = [0xff6b8b, 0xff8ea8, 0xffcc00, 0xff8e53];
-        const material = new THREE.PointsMaterial({
-            size: 0.2,
-            color: colors[Math.floor(Math.random() * colors.length)],
+        
+        dustGeom.setAttribute('position', new THREE.Float32BufferAttribute(dustPositions, 3));
+        const dustMat = new THREE.PointsMaterial({ 
+            color: 0xffddaa, 
+            size: 0.05,
             transparent: true,
-            opacity: 1,
-            blending: THREE.AdditiveBlending
+            opacity: 0.3
+        });
+        const dust = new THREE.Points(dustGeom, dustMat);
+        this.scene.add(dust);
+        this.dustSystem = dust;
+    }
+
+    createElevatorSystem() {
+        // Elevator platform
+        const elevatorGeom = new THREE.BoxGeometry(2, 0.1, 2);
+        const elevatorMat = new THREE.MeshStandardMaterial({ 
+            color: 0x555577,
+            metalness: 0.6,
+            roughness: 0.3
+        });
+        this.elevatorPlatform = new THREE.Mesh(elevatorGeom, elevatorMat);
+        this.elevatorPlatform.position.set(8, 0.05, 8);
+        this.elevatorPlatform.castShadow = true;
+        this.elevatorPlatform.receiveShadow = true;
+        this.scene.add(this.elevatorPlatform);
+
+        // Elevator walls
+        const wallGeom = new THREE.BoxGeometry(0.1, 3, 2);
+        const wallMat = new THREE.MeshStandardMaterial({ 
+            color: 0x444466,
+            transparent: true,
+            opacity: 0.7
+        });
+        
+        const leftWall = new THREE.Mesh(wallGeom, wallMat);
+        leftWall.position.set(7, 1.5, 8);
+        this.scene.add(leftWall);
+        this.elevatorWalls = [leftWall];
+
+        const rightWall = new THREE.Mesh(wallGeom, wallMat);
+        rightWall.position.set(9, 1.5, 8);
+        this.scene.add(rightWall);
+        this.elevatorWalls.push(rightWall);
+
+        // Control panel
+        const panelGeom = new THREE.BoxGeometry(0.4, 0.6, 0.1);
+        const panelMat = new THREE.MeshStandardMaterial({ color: 0x222244 });
+        const panel = new THREE.Mesh(panelGeom, panelMat);
+        panel.position.set(7.2, 1.5, 7);
+        this.scene.add(panel);
+
+        // Interactive buttons
+        this.createElevatorButtons();
+    }
+
+    createElevatorButtons() {
+        const buttonData = [
+            { label: 'R', floor: 1, y: 1.7 },  // Roof
+            { label: 'M', floor: 0, y: 1.5 },  // Main
+            { label: 'B', floor: -1, y: 1.3 } // Basement
+        ];
+
+        buttonData.forEach(data => {
+            const btnGeom = new THREE.CircleGeometry(0.08, 16);
+            const btnMat = new THREE.MeshStandardMaterial({ 
+                color: 0x44ff88,
+                emissive: 0x22aa44,
+                emissiveIntensity: 0.5
+            });
+            const btn = new THREE.Mesh(btnGeom, btnMat);
+            btn.position.set(7.15, data.y, 7);
+            btn.rotation.y = -Math.PI / 2;
+            this.scene.add(btn);
+
+            this.interactiveObjects.push({
+                object: btn,
+                name: `Floor ${data.label}`,
+                desc: 'Take elevator',
+                action: () => this.callElevator(data.floor)
+            });
+        });
+    }
+
+    callElevator(targetFloor) {
+        if (this.elevator.moving) return;
+        
+        this.elevator.moving = true;
+        this.elevator.targetFloor = targetFloor;
+        this.showNotification(`Elevator moving to ${targetFloor === 1 ? 'Roof' : targetFloor === 0 ? 'Main Floor' : 'Basement'}...`);
+    }
+
+    updateElevator() {
+        if (!this.elevator.moving) return;
+
+        const targetY = this.elevator.targetFloor * 8;
+        const currentY = this.elevatorPlatform.position.y;
+        const diff = targetY - currentY;
+
+        if (Math.abs(diff) < 0.1) {
+            this.elevatorPlatform.position.y = targetY;
+            this.elevator.moving = false;
+            this.elevator.currentFloor = this.elevator.targetFloor;
+            this.showNotification('Elevator arrived!');
+            
+            // Update player position if on elevator
+            const playerDist = this.state.player.pos.distanceTo(
+                new THREE.Vector3(8, this.elevatorPlatform.position.y + 1.6, 8)
+            );
+            if (playerDist < 2) {
+                this.state.player.pos.y = targetY + 1.6;
+            }
+        } else {
+            this.elevatorPlatform.position.y += Math.sign(diff) * this.elevator.speed;
+            
+            // Move walls with platform
+            this.elevatorWalls.forEach(wall => {
+                wall.position.y = this.elevatorPlatform.position.y + 1.5;
+            });
+
+            // Move player if standing on elevator
+            const playerDist = this.state.player.pos.distanceTo(
+                new THREE.Vector3(8, this.elevatorPlatform.position.y + 1.6, 8)
+            );
+            if (playerDist < 1.5) {
+                this.state.player.pos.y += Math.sign(diff) * this.elevator.speed;
+            }
+        }
+    }
+
+    createSitPoints() {
+        // Chairs and couch sit points
+        const sitPositions = [
+            { pos: [-5, 0.4, -5], name: 'Couch' },
+            { pos: [-4, 0.4, -5], name: 'Couch' },
+            { pos: [-6, 0.4, -5], name: 'Couch' },
+            { pos: [5, 0.4, 5], name: 'Chair' }
+        ];
+
+        sitPositions.forEach(data => {
+            // Create invisible trigger
+            const sitGeom = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+            const sitMat = new THREE.MeshBasicMaterial({ 
+                color: 0x00ff00,
+                transparent: true,
+                opacity: 0,
+                wireframe: true
+            });
+            const sitTrigger = new THREE.Mesh(sitGeom, sitMat);
+            sitTrigger.position.set(data.pos[0], data.pos[1], data.pos[2]);
+            this.scene.add(sitTrigger);
+
+            this.interactiveObjects.push({
+                object: sitTrigger,
+                name: data.name,
+                desc: 'Sit down',
+                action: () => this.sitDown(data.pos)
+            });
+
+            this.sitPoints.push({ position: data.pos, trigger: sitTrigger });
+        });
+    }
+
+    sitDown(position) {
+        this.state.sitting = true;
+        this.state.sittingPosition = new THREE.Vector3(position[0], position[1] + 0.6, position[2]);
+        this.state.player.canMove = false;
+        this.showNotification('Press SPACE to stand up');
+    }
+
+    standUp() {
+        this.state.sitting = false;
+        this.state.sittingPosition = null;
+        this.state.player.canMove = true;
+        this.showNotification('Standing up...');
+    }
+
+    setupControls() {
+        // Keyboard
+        window.addEventListener('keydown', (e) => {
+            this.keys[e.code] = true;
+            
+            if (e.code === 'Escape' && this.state.started) {
+                this.togglePause();
+            }
+            if (e.code === 'Space' && this.state.sitting) {
+                this.standUp();
+            }
+            if (e.code === 'KeyE') {
+                this.interact();
+            }
         });
 
-        const firework = new THREE.Points(geometry, material);
-        this.scene.add(firework);
+        window.addEventListener('keyup', (e) => {
+            this.keys[e.code] = false;
+        });
 
-        // Animate explosion
-        let life = 0;
-        const animate = () => {
-            life += 0.02;
-            if (life > 1) {
-                this.scene.remove(firework);
-                return;
-            }
-
-            const positions = firework.geometry.attributes.position.array;
-            for (let i = 0; i < particleCount; i++) {
-                positions[i * 3] += velocities[i].x;
-                positions[i * 3 + 1] += velocities[i].y;
-                positions[i * 3 + 2] += velocities[i].z;
-                
-                velocities[i].y -= 0.01; // Gravity
-            }
+        // Mouse look
+        document.addEventListener('mousemove', (e) => {
+            if (!this.state.started || this.state.paused || !this.state.player.canMove) return;
             
-            firework.geometry.attributes.position.needsUpdate = true;
-            firework.material.opacity = 1 - life;
+            this.targetCameraRotation.yaw -= e.movementX * this.state.settings.mouseSens;
+            this.targetCameraRotation.pitch -= e.movementY * this.state.settings.mouseSens;
+            this.targetCameraRotation.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.targetCameraRotation.pitch));
+        });
 
-            requestAnimationFrame(animate);
-        };
-        animate();
+        // Lock pointer on click
+        const canvas = document.getElementById('game-canvas');
+        canvas.addEventListener('click', () => {
+            if (this.state.started && !this.state.paused) {
+                canvas.requestPointerLock();
+            }
+        });
+
+        // Window resize
+        window.addEventListener('resize', () => {
+            this.camera.aspect = window.innerWidth / window.innerHeight;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     }
 
-    showValentineMessage() {
-        if (this.state.valentineShown) return;
-        this.state.valentineShown = true;
+    setupUI() {
+        // Start button
+        document.getElementById('btn-start').addEventListener('click', () => {
+            this.startGame();
+        });
 
-        const message = document.createElement('div');
-        message.style.cssText = `
+        // Pause menu
+        document.getElementById('btn-resume').addEventListener('click', () => {
+            this.togglePause();
+        });
+
+        document.getElementById('btn-quit').addEventListener('click', () => {
+            this.quitToMenu();
+        });
+
+        // Modal close buttons
+        document.querySelectorAll('.modal-x').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.target.closest('.modal').classList.remove('show');
+            });
+        });
+
+        // Water bonsai
+        document.getElementById('btn-water').addEventListener('click', () => {
+            this.waterPlant();
+        });
+
+        // Photo upload system
+        this.setupPhotoUpload();
+
+        // Custom letter system
+        this.setupCustomLetter();
+
+        // Music player (placeholder)
+        this.setupMusicPlayer();
+    }
+
+    setupPhotoUpload() {
+        // Create upload button in HUD
+        const uploadBtn = document.createElement('button');
+        uploadBtn.className = 'act-btn tooltip upload-photos-btn';
+        uploadBtn.setAttribute('data-tip', 'Upload Photos');
+        uploadBtn.innerHTML = '<i class="fas fa-camera"></i><span class="act-label">Upload</span>';
+        uploadBtn.style.cssText = `
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 4rem;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #ff6b8b, #ff88aa);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            color: white;
             font-weight: 600;
-            color: #ff6b8b;
-            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 107, 139, 0.4);
+            transition: all 0.3s ease;
             z-index: 1000;
-            text-shadow: 0 0 20px rgba(255,107,139,0.8);
-            animation: fadeInOut 5s ease-in-out;
         `;
-        message.textContent = "Happy Valentine's Day, Tan! ♥";
-        document.body.appendChild(message);
+        document.body.appendChild(uploadBtn);
 
-        setTimeout(() => message.remove(), 5000);
+        uploadBtn.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true;
+            input.accept = 'image/*';
+            input.addEventListener('change', (e) => {
+                this.handlePhotoUpload(e.target.files);
+            });
+            input.click();
+        });
     }
 
-    showNotification(text) {
-        const notif = document.createElement('div');
-        notif.className = 'notification';
-        notif.textContent = text;
-        document.getElementById('notifs')?.appendChild(notif);
-
-        setTimeout(() => {
-            notif.classList.add('fade-out');
-            setTimeout(() => notif.remove(), 500);
-        }, 3000);
+    handlePhotoUpload(files) {
+        Array.from(files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.state.uploadedPhotos.push(e.target.result);
+                this.tanImages.push(e.target.result);
+                this.showNotification(`Uploaded ${file.name}!`);
+                this.updateTVSlideshow();
+            };
+            reader.readAsDataURL(file);
+        });
     }
 
-    showWelcomeMessage() {
-        const welcomeOverlay = document.createElement('div');
-        welcomeOverlay.style.cssText = `
+    setupCustomLetter() {
+        // Create letter write button
+        const letterBtn = document.createElement('button');
+        letterBtn.className = 'act-btn tooltip write-letter-btn';
+        letterBtn.setAttribute('data-tip', 'Write Custom Letter');
+        letterBtn.innerHTML = '<i class="fas fa-pen"></i><span class="act-label">Write</span>';
+        letterBtn.style.cssText = `
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background: linear-gradient(135deg, #9966ff, #aa88ff);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(153, 102, 255, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        `;
+        document.body.appendChild(letterBtn);
+
+        letterBtn.addEventListener('click', () => {
+            this.openLetterEditor();
+        });
+    }
+
+    openLetterEditor() {
+        const editor = document.createElement('div');
+        editor.className = 'letter-editor-modal';
+        editor.innerHTML = `
+            <div class="modal-box wide">
+                <div class="modal-head">
+                    <h2>✍️ Write Your Custom Letter</h2>
+                    <button class="modal-x" onclick="this.closest('.letter-editor-modal').remove()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <textarea id="custom-letter-textarea" placeholder="Write your heartfelt message here..." style="
+                        width: 100%;
+                        min-height: 300px;
+                        padding: 20px;
+                        border: 2px solid rgba(255,255,255,0.1);
+                        border-radius: 12px;
+                        background: rgba(255,255,255,0.05);
+                        color: white;
+                        font-family: 'Cormorant Garamond', serif;
+                        font-size: 18px;
+                        resize: vertical;
+                    ">${this.state.customLetter}</textarea>
+                    <button class="btn btn-primary" onclick="game.saveCustomLetter()" style="margin-top: 20px;">
+                        <i class="fas fa-save"></i> Save Letter
+                    </button>
+                </div>
+            </div>
+        `;
+        editor.style.cssText = `
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(ellipse at center, rgba(13,8,37,0.95), rgba(5,5,26,0.98));
-            backdrop-filter: blur(10px);
-            z-index: 9998;
+            background: rgba(0,0,0,0.85);
             display: flex;
             justify-content: center;
             align-items: center;
-            animation: fadeOut 3s ease-in-out forwards;
+            z-index: 10000;
         `;
-
-        const welcomeText = document.createElement('div');
-        welcomeText.style.cssText = `
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 3rem;
-            font-weight: 600;
-            color: #ff6b8b;
-            text-align: center;
-            animation: fadeIn 1s ease-in;
-        `;
-        welcomeText.innerHTML = `
-            <div style="font-size: 1.5rem; color: rgba(255,255,255,0.6); margin-bottom: 20px;">Your Personal Sanctuary</div>
-            <div>Welcome Home, Tan</div>
-            <div style="font-size: 1.2rem; color: rgba(255,255,255,0.5); margin-top: 20px;">Built with ♥ just for you</div>
-        `;
-
-        welcomeOverlay.appendChild(welcomeText);
-        document.body.appendChild(welcomeOverlay);
-
-        setTimeout(() => welcomeOverlay.remove(), 3000);
+        document.body.appendChild(editor);
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    // UTILITY FUNCTIONS
-    // ══════════════════════════════════════════════════════════════════
-    progress(pct, msg) {
-        const bar = document.getElementById('load-bar');
-        const pctEl = document.getElementById('load-pct');
-        const asset = document.getElementById('load-asset');
-        if (bar) bar.style.width = `${pct}%`;
-        if (pctEl) pctEl.textContent = `${pct}%`;
-        if (asset) asset.textContent = msg;
+    saveCustomLetter() {
+        const textarea = document.getElementById('custom-letter-textarea');
+        this.state.customLetter = textarea.value;
+        this.showNotification('Letter saved! Check the postbox on the roof.');
+        document.querySelector('.letter-editor-modal').remove();
     }
 
-    initLoaderParticles() {
-        const container = document.getElementById('loader-particles');
-        if (!container) return;
-
-        for (let i = 0; i < 50; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'loader-particle';
-            particle.style.cssText = `
-                position: absolute;
-                width: 3px;
-                height: 3px;
-                background: radial-gradient(circle, rgba(255,107,139,0.8), transparent);
-                border-radius: 50%;
-                left: ${Math.random() * 100}%;
-                top: ${Math.random() * 100}%;
-                animation: float ${3 + Math.random() * 3}s ease-in-out infinite;
-                animation-delay: ${Math.random() * 2}s;
-            `;
-            container.appendChild(particle);
+    openCustomLetter() {
+        const modal = document.getElementById('modal-letter');
+        const content = document.getElementById('letter-content-display');
+        const title = document.getElementById('letter-title-display');
+        
+        if (this.state.customLetter) {
+            content.textContent = this.state.customLetter;
+            title.textContent = 'Your Personal Message 💕';
+        } else {
+            content.textContent = 'No custom letter written yet. Click the Write button to create one!';
+            title.textContent = 'Empty Letter Box';
+        }
+        
+        modal.classList.add('show');
+        
+        if (!this.state.letterRead && this.state.customLetter) {
+            this.state.letterRead = true;
+            setTimeout(() => this.triggerValentineFireworks(), 1000);
         }
     }
 
-    sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
+    setupMusicPlayer() {
+        // Placeholder - music controls already in HTML
+        const playBtn = document.getElementById('mp-play');
+        const prevBtn = document.getElementById('mp-prev');
+        const nextBtn = document.getElementById('mp-next');
+        const volumeSlider = document.getElementById('mp-volume');
 
-    animateScale(object, targetScale, duration) {
-        const startScale = object.scale.x;
-        const startTime = Date.now();
-
-        const animate = () => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const eased = this.easeInOutCubic(progress);
-            
-            const scale = startScale + (targetScale - startScale) * eased;
-            object.scale.set(scale, scale, scale);
-
-            if (progress < 1) {
-                requestAnimationFrame(animate);
+        // Simple toggle
+        playBtn.addEventListener('click', () => {
+            const icon = playBtn.querySelector('i');
+            if (icon.classList.contains('fa-play')) {
+                icon.classList.remove('fa-play');
+                icon.classList.add('fa-pause');
+                document.getElementById('mp-title').textContent = 'Your Favorite Song';
+                document.getElementById('mp-artist').textContent = 'Playing...';
+            } else {
+                icon.classList.remove('fa-pause');
+                icon.classList.add('fa-play');
+                document.getElementById('mp-artist').textContent = 'Paused';
             }
-        };
-        animate();
+        });
     }
 
-    easeInOutCubic(t) {
-        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    updateTVSlideshow() {
+        if (this.tanImages.length === 0) return;
+        
+        const loader = new THREE.TextureLoader();
+        const currentImage = this.tanImages[this.state.slideshowIndex % this.tanImages.length];
+        
+        loader.load(currentImage, (texture) => {
+            if (this.tvScreen) {
+                this.tvScreen.material.map = texture;
+                this.tvScreen.material.needsUpdate = true;
+            }
+        });
     }
 
-    loadSavedProgress() {
-        const saved = localStorage.getItem('tanmai_garden_progress');
-        if (saved) {
-            const data = JSON.parse(saved);
-            this.state.gardenLevel = data.level || 1;
-            this.state.gardenXP = data.xp || 0;
-            this.state.dailyStreak = data.streak || 0;
+    nextSlide() {
+        this.state.slideshowIndex++;
+        this.updateTVSlideshow();
+        this.showNotification(`Photo ${(this.state.slideshowIndex % this.tanImages.length) + 1}/${this.tanImages.length}`);
+    }
+
+    interact() {
+        if (!this.state.started || this.state.paused) return;
+
+        // Check for interactive object in front of player
+        const interactRange = 3;
+        const playerPos = this.state.player.pos;
+        const forward = new THREE.Vector3(0, 0, -1);
+        forward.applyEuler(this.camera.rotation);
+
+        for (const obj of this.interactiveObjects) {
+            const dist = obj.object.position.distanceTo(playerPos);
+            if (dist < interactRange) {
+                const dirToObj = new THREE.Vector3()
+                    .subVectors(obj.object.position, playerPos)
+                    .normalize();
+                const dot = forward.dot(dirToObj);
+                
+                if (dot > 0.7) {
+                    obj.action();
+                    return;
+                }
+            }
         }
     }
 
-    toggleMusic() {
-        this.musicPlaying = !this.musicPlaying;
-        const icon = document.querySelector('#mp-play i');
-        if (icon) {
-            icon.className = this.musicPlaying ? 'fas fa-pause' : 'fas fa-play';
+    openPlantModal() {
+        document.getElementById('modal-plant').classList.add('show');
+    }
+
+    waterPlant() {
+        this.showNotification('🌸 Bonsai watered! It looks happier.');
+        // Animate bonsai glow
+        if (this.bonsai) {
+            this.bonsai.material.emissiveIntensity = 0.5;
+            setTimeout(() => {
+                this.bonsai.material.emissiveIntensity = 0.2;
+            }, 1000);
+        }
+        document.getElementById('modal-plant').classList.remove('show');
+    }
+
+    triggerValentineFireworks() {
+        if (this.state.fireworksActive) return;
+        this.state.fireworksActive = true;
+        
+        // Show Valentine message
+        const msg = document.createElement('div');
+        msg.className = 'valentine-message';
+        msg.innerHTML = `
+            <h1 style="font-family: 'Cormorant Garamond', serif; font-size: 4rem; color: #ff6b8b; text-shadow: 0 0 20px rgba(255,107,139,0.8);">
+                Happy Valentine's Day!
+            </h1>
+            <p style="font-size: 1.5rem; color: #ffaabb; margin-top: 20px;">
+                With all my love 💕
+            </p>
+        `;
+        msg.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 9999;
+            animation: fadeInScale 1s ease-out;
+        `;
+        document.body.appendChild(msg);
+
+        // Launch fireworks
+        for (let i = 0; i < 15; i++) {
+            setTimeout(() => this.launchFirework(), i * 300);
+        }
+
+        setTimeout(() => {
+            msg.style.animation = 'fadeOut 1s ease-out';
+            setTimeout(() => msg.remove(), 1000);
+            this.state.fireworksActive = false;
+        }, 5000);
+    }
+
+    launchFirework() {
+        const colors = [0xff6b8b, 0xffaa88, 0xff88ff, 0x88ffff, 0xffff88];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        
+        const particleCount = 50;
+        const geometry = new THREE.BufferGeometry();
+        const positions = [];
+        const velocities = [];
+        
+        for (let i = 0; i < particleCount; i++) {
+            positions.push(0, 0, 0);
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.random() * Math.PI;
+            const speed = 0.1 + Math.random() * 0.2;
+            velocities.push(
+                Math.sin(phi) * Math.cos(theta) * speed,
+                Math.sin(phi) * Math.sin(theta) * speed,
+                Math.cos(phi) * speed
+            );
+        }
+        
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        const material = new THREE.PointsMaterial({ 
+            color, 
+            size: 0.2,
+            transparent: true,
+            opacity: 1
+        });
+        const firework = new THREE.Points(geometry, material);
+        firework.position.set(
+            (Math.random() - 0.5) * 30,
+            15 + Math.random() * 10,
+            (Math.random() - 0.5) * 30
+        );
+        this.scene.add(firework);
+        
+        this.fireworks.push({ 
+            mesh: firework, 
+            velocities, 
+            lifetime: 0,
+            maxLifetime: 60 
+        });
+    }
+
+    updateMovement() {
+        if (!this.state.player.canMove || this.state.sitting) {
+            if (this.state.sitting && this.state.sittingPosition) {
+                this.state.player.pos.copy(this.state.sittingPosition);
+            }
+            return;
+        }
+
+        const speed = this.state.player.speed;
+        const forward = new THREE.Vector3(0, 0, -1);
+        const right = new THREE.Vector3(1, 0, 0);
+        
+        forward.applyEuler(new THREE.Euler(0, this.smoothRotation.yaw, 0));
+        right.applyEuler(new THREE.Euler(0, this.smoothRotation.yaw, 0));
+
+        const moveVector = new THREE.Vector3(0, 0, 0);
+
+        if (this.keys['KeyW']) moveVector.add(forward);
+        if (this.keys['KeyS']) moveVector.sub(forward);
+        if (this.keys['KeyD']) moveVector.add(right);
+        if (this.keys['KeyA']) moveVector.sub(right);
+
+        if (moveVector.length() > 0) {
+            moveVector.normalize();
+            this.state.player.pos.add(moveVector.multiplyScalar(speed));
+        }
+
+        // Jump
+        if (this.keys['Space'] && this.state.player.canJump && !this.state.sitting) {
+            this.physVelY = this.state.player.jumpPower;
+            this.state.player.canJump = false;
+        }
+
+        // Apply gravity
+        this.physVelY -= 0.008;
+        this.state.player.pos.y += this.physVelY;
+
+        // Floor collision
+        if (this.state.player.pos.y < 1.6) {
+            this.state.player.pos.y = 1.6;
+            this.physVelY = 0;
+            this.state.player.canJump = true;
+        }
+
+        // Wall boundaries
+        this.state.player.pos.x = Math.max(-9.5, Math.min(9.5, this.state.player.pos.x));
+        this.state.player.pos.z = Math.max(-9.5, Math.min(9.5, this.state.player.pos.z));
+    }
+
+    updateCamera() {
+        // Smooth camera rotation with lerp
+        const lerpFactor = 0.15;
+        this.smoothRotation.yaw += (this.targetCameraRotation.yaw - this.smoothRotation.yaw) * lerpFactor;
+        this.smoothRotation.pitch += (this.targetCameraRotation.pitch - this.smoothRotation.pitch) * lerpFactor;
+
+        this.camera.rotation.set(this.smoothRotation.pitch, this.smoothRotation.yaw, 0, 'YXZ');
+        this.camera.position.copy(this.state.player.pos);
+    }
+
+    updateAnimations() {
+        const time = this.clock.getElapsedTime();
+
+        // Animate candles
+        this.candles.forEach((candle, i) => {
+            candle.light.intensity = 1.5 + Math.sin(time * 3 + i) * 0.3;
+            candle.light.position.y = candle.baseY + Math.sin(time * 2 + i) * 0.05;
+        });
+
+        // Animate birds
+        this.birds.forEach(bird => {
+            bird.angle += bird.speed * this.delta;
+            bird.mesh.position.x = Math.cos(bird.angle) * bird.radius;
+            bird.mesh.position.z = Math.sin(bird.angle) * bird.radius;
+            bird.mesh.position.y = bird.height + Math.sin(time + bird.angle) * 2;
+            bird.mesh.rotation.z = Math.sin(time * 2 + bird.angle) * 0.3;
+            bird.mesh.lookAt(
+                bird.mesh.position.x + Math.cos(bird.angle),
+                bird.mesh.position.y,
+                bird.mesh.position.z + Math.sin(bird.angle)
+            );
+        });
+
+        // Animate fish
+        this.fish.forEach(fish => {
+            fish.angle += fish.speed * this.delta;
+            fish.mesh.position.x = Math.cos(fish.angle) * fish.radius;
+            fish.mesh.position.z = Math.sin(fish.angle) * fish.radius;
+            fish.mesh.position.y = fish.height + Math.sin(time * 0.5 + fish.angle) * 1.5;
+            fish.mesh.lookAt(
+                fish.mesh.position.x + Math.cos(fish.angle),
+                fish.mesh.position.y,
+                fish.mesh.position.z + Math.sin(fish.angle)
+            );
+        });
+
+        // Animate stingrays
+        this.stingrays.forEach(ray => {
+            ray.angle += ray.speed * this.delta;
+            ray.wobble += 0.05;
+            ray.mesh.position.x = Math.cos(ray.angle) * ray.radius;
+            ray.mesh.position.z = Math.sin(ray.angle) * ray.radius;
+            ray.mesh.position.y = ray.height + Math.sin(time * 0.3 + ray.angle) * 3;
+            ray.mesh.rotation.x = Math.sin(ray.wobble) * 0.2;
+            ray.mesh.rotation.z = Math.cos(ray.wobble * 0.7) * 0.3;
+            ray.mesh.lookAt(
+                ray.mesh.position.x + Math.cos(ray.angle),
+                ray.mesh.position.y,
+                ray.mesh.position.z + Math.sin(ray.angle)
+            );
+        });
+
+        // Animate planets
+        this.planets.forEach(planet => {
+            planet.angle += planet.speed;
+            planet.mesh.rotation.y += 0.005;
+            planet.mesh.position.y += Math.sin(time + planet.angle) * 0.01;
+        });
+
+        // Update shooting stars
+        for (let i = this.shootingStars.length - 1; i >= 0; i--) {
+            const star = this.shootingStars[i];
+            star.lifetime++;
+            
+            if (star.lifetime > star.maxLifetime) {
+                this.scene.remove(star.mesh);
+                this.shootingStars.splice(i, 1);
+                continue;
+            }
+            
+            star.mesh.position.add(star.velocity);
+            star.mesh.material.opacity = 1 - (star.lifetime / star.maxLifetime);
+            
+            // Update trail
+            const positions = star.mesh.geometry.attributes.position.array;
+            for (let j = positions.length - 3; j >= 3; j -= 3) {
+                positions[j] = positions[j - 3];
+                positions[j + 1] = positions[j - 2];
+                positions[j + 2] = positions[j - 1];
+            }
+            positions[0] = 0;
+            positions[1] = 0;
+            positions[2] = 0;
+            star.mesh.geometry.attributes.position.needsUpdate = true;
+        }
+
+        // Update fireworks
+        for (let i = this.fireworks.length - 1; i >= 0; i--) {
+            const fw = this.fireworks[i];
+            fw.lifetime++;
+            
+            if (fw.lifetime > fw.maxLifetime) {
+                this.scene.remove(fw.mesh);
+                this.fireworks.splice(i, 1);
+                continue;
+            }
+            
+            const positions = fw.mesh.geometry.attributes.position.array;
+            for (let j = 0; j < positions.length; j += 3) {
+                positions[j] += fw.velocities[j];
+                positions[j + 1] += fw.velocities[j + 1];
+                positions[j + 2] += fw.velocities[j + 2];
+                fw.velocities[j + 1] -= 0.003; // Gravity
+            }
+            fw.mesh.geometry.attributes.position.needsUpdate = true;
+            fw.mesh.material.opacity = 1 - (fw.lifetime / fw.maxLifetime);
+        }
+
+        // Snowflakes fall
+        if (this.snowSystem) {
+            const positions = this.snowSystem.mesh.geometry.attributes.position.array;
+            for (let i = 1; i < positions.length; i += 3) {
+                positions[i] -= 0.05;
+                if (positions[i] < -10) {
+                    positions[i] = 100;
+                }
+            }
+            this.snowSystem.mesh.geometry.attributes.position.needsUpdate = true;
+            this.snowSystem.mesh.rotation.y += 0.0002;
+        }
+
+        // Rotate dust particles
+        if (this.dustSystem) {
+            this.dustSystem.rotation.y += 0.0005;
         }
     }
 
-    prevTrack() {
-        this.showNotification('⏮️ Previous track');
+    updateInteractionHint() {
+        const hint = document.getElementById('interact-hint');
+        const interactName = document.getElementById('interact-text');
+        const interactDesc = document.getElementById('interact-desc');
+        const crosshair = document.getElementById('crosshair');
+
+        if (!this.state.started || this.state.paused) {
+            hint.classList.remove('show');
+            return;
+        }
+
+        const interactRange = 3;
+        const playerPos = this.state.player.pos;
+        const forward = new THREE.Vector3(0, 0, -1);
+        forward.applyEuler(this.camera.rotation);
+
+        let closestObj = null;
+        let closestDot = 0.7;
+
+        for (const obj of this.interactiveObjects) {
+            const dist = obj.object.position.distanceTo(playerPos);
+            if (dist < interactRange) {
+                const dirToObj = new THREE.Vector3()
+                    .subVectors(obj.object.position, playerPos)
+                    .normalize();
+                const dot = forward.dot(dirToObj);
+                
+                if (dot > closestDot) {
+                    closestDot = dot;
+                    closestObj = obj;
+                }
+            }
+        }
+
+        if (closestObj) {
+            hint.classList.add('show');
+            crosshair.classList.add('active');
+            interactName.textContent = closestObj.name;
+            interactDesc.textContent = closestObj.desc;
+            this._currentInteractive = closestObj;
+        } else {
+            hint.classList.remove('show');
+            crosshair.classList.remove('active');
+            this._currentInteractive = null;
+        }
     }
 
-    nextTrack() {
-        this.showNotification('⏭️ Next track');
+    updateHUD() {
+        const clock = document.getElementById('hud-clock');
+        const date = document.getElementById('hud-date');
+        const location = document.getElementById('hud-location');
+
+        // Current time
+        const now = new Date();
+        clock.textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        date.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+        // Location based on floor
+        let loc = '🏠 Main Room';
+        if (this.state.player.pos.y > 6) loc = '🏞️ Rooftop';
+        else if (this.state.player.pos.y < -2) loc = '🔒 Basement';
+        location.textContent = loc;
     }
 
-    setVolume(vol) {
-        // Set audio volume
-        this.showNotification(`🔊 Volume: ${Math.round(vol * 100)}%`);
+    animate() {
+        requestAnimationFrame(() => this.animate());
+
+        if (!this.state.started || this.state.paused) {
+            this.renderer.render(this.scene, this.camera);
+            return;
+        }
+
+        this.delta = this.clock.getDelta();
+
+        this.updateMovement();
+        this.updateCamera();
+        this.updateAnimations();
+        this.updateElevator();
+        this.updateInteractionHint();
+        this.updateHUD();
+
+        this.renderer.render(this.scene, this.camera);
     }
 
-    seekMusic(e) {
-        // Seek to position in track
+    startGame() {
+        document.getElementById('main-menu').classList.add('hidden');
+        document.getElementById('hud').classList.remove('hidden');
+        this.state.started = true;
+        this.state.player.canMove = true;
+        document.getElementById('game-canvas').requestPointerLock();
+    }
+
+    togglePause() {
+        this.state.paused = !this.state.paused;
+        const pauseMenu = document.getElementById('pause-menu');
+        
+        if (this.state.paused) {
+            pauseMenu.classList.remove('hidden');
+            document.exitPointerLock();
+        } else {
+            pauseMenu.classList.add('hidden');
+            document.getElementById('game-canvas').requestPointerLock();
+        }
+    }
+
+    quitToMenu() {
+        this.state.started = false;
+        this.state.paused = false;
+        this.state.player.pos.set(0, 1.6, 3);
+        document.getElementById('pause-menu').classList.add('hidden');
+        document.getElementById('hud').classList.add('hidden');
+        document.getElementById('main-menu').classList.remove('hidden');
+        document.exitPointerLock();
+    }
+
+    showNotification(message) {
+        const notif = document.createElement('div');
+        notif.className = 'notification';
+        notif.textContent = message;
+        notif.style.cssText = `
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 107, 139, 0.95);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            z-index: 9999;
+            animation: notifSlide 0.3s ease-out;
+            box-shadow: 0 4px 20px rgba(255, 107, 139, 0.5);
+        `;
+        document.getElementById('notifs').appendChild(notif);
+        
+        setTimeout(() => {
+            notif.style.animation = 'notifFadeOut 0.3s ease-out';
+            setTimeout(() => notif.remove(), 300);
+        }, 3000);
+    }
+
+    finishLoading() {
+        setTimeout(() => {
+            document.getElementById('loading-screen').classList.add('fade-out');
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+            }, 1200);
+        }, 500);
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// START THE EXPERIENCE
-// ═══════════════════════════════════════════════════════════════════════════
-window.addEventListener('DOMContentLoaded', () => {
-    const game = new GameEngine();
-    window.game = game; // For debugging
-});
+// Initialize
+const game = new GameEngine();
+window.game = game;
+
+// Add animations CSS
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeInScale {
+        from {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.8);
+        }
+        to {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+    }
+
+    @keyframes fadeOut {
+        to {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.9);
+        }
+    }
+
+    @keyframes notifSlide {
+        from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    }
+
+    @keyframes notifFadeOut {
+        to {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-10px);
+        }
+    }
+
+    .modal.show {
+        display: flex !important;
+        animation: modalFadeIn 0.3s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    .crosshair.active .crosshair-ring {
+        border-color: #ff6b8b;
+        transform: scale(1.2);
+    }
+
+    .interact-hint {
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .interact-hint.show {
+        opacity: 1;
+    }
+`;
+document.head.appendChild(style);
