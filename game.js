@@ -37,14 +37,14 @@ class GameEngine {
                 vel: new THREE.Vector3(0, 0, 0),
                 canMove: true, 
                 canJump: true,
-                speed: 0.12, // Smoother, faster movement
+                speed: 0.12,
                 jumpPower: 0.18,
                 rotation: new THREE.Euler(0, 0, 0),
                 yaw: 0,
                 pitch: 0
             },
             settings: { 
-                mouseSens: 0.0015, // Smoother look
+                mouseSens: 0.0015,
                 bloom: true, 
                 particles: true,
                 shadows: true,
@@ -95,7 +95,7 @@ class GameEngine {
         // Elevator system
         this.elevator = {
             moving: false,
-            targetFloor: 0, // 0 = main, 1 = roof, -1 = basement
+            targetFloor: 0,
             currentFloor: 0,
             position: 0,
             speed: 0.02
@@ -153,11 +153,9 @@ class GameEngine {
     }
 
     setupLights() {
-        // Ambient light for base visibility
         const ambient = new THREE.AmbientLight(0x404060, 0.4);
         this.scene.add(ambient);
 
-        // Moon light
         const moonLight = new THREE.DirectionalLight(0xaaccff, 0.6);
         moonLight.position.set(20, 30, 10);
         moonLight.castShadow = true;
@@ -166,14 +164,12 @@ class GameEngine {
         moonLight.shadow.camera.far = 100;
         this.scene.add(moonLight);
 
-        // Warm interior light
         const interiorLight = new THREE.PointLight(0xffddaa, 1.5, 20);
         interiorLight.position.set(0, 3, 0);
         this.scene.add(interiorLight);
     }
 
     async loadAssets() {
-        // Simulate loading
         const loadBar = document.getElementById('load-bar');
         const loadGlow = document.getElementById('load-glow');
         const loadPct = document.getElementById('load-pct');
@@ -197,10 +193,8 @@ class GameEngine {
     }
 
     createWorld() {
-        // Space skybox with stars
         this.createSpaceSkybox();
         
-        // Main floor (inside)
         const floorGeom = new THREE.BoxGeometry(20, 0.2, 20);
         const floorMat = new THREE.MeshStandardMaterial({ 
             color: 0x2a1f3d,
@@ -212,10 +206,8 @@ class GameEngine {
         floor.receiveShadow = true;
         this.scene.add(floor);
 
-        // Walls with windows
         this.createWalls();
 
-        // Basement floor
         const basementFloor = new THREE.Mesh(
             new THREE.BoxGeometry(15, 0.2, 15),
             new THREE.MeshStandardMaterial({ color: 0x1a1520 })
@@ -224,7 +216,6 @@ class GameEngine {
         basementFloor.receiveShadow = true;
         this.scene.add(basementFloor);
 
-        // Roof platform
         const roofFloor = new THREE.Mesh(
             new THREE.BoxGeometry(18, 0.2, 18),
             new THREE.MeshStandardMaterial({ color: 0x2a2040 })
@@ -233,7 +224,6 @@ class GameEngine {
         roofFloor.receiveShadow = true;
         this.scene.add(roofFloor);
 
-        // Furniture
         this.createFurniture();
         this.createBonsai();
         this.createTV();
@@ -242,7 +232,6 @@ class GameEngine {
     }
 
     createSpaceSkybox() {
-        // Starfield
         const starGeometry = new THREE.BufferGeometry();
         const starVertices = [];
         for (let i = 0; i < 8000; i++) {
@@ -262,7 +251,6 @@ class GameEngine {
         const stars = new THREE.Points(starGeometry, starMaterial);
         this.scene.add(stars);
 
-        // Moon
         const moonGeom = new THREE.SphereGeometry(8, 32, 32);
         const moonMat = new THREE.MeshStandardMaterial({ 
             color: 0xffffee,
@@ -283,26 +271,22 @@ class GameEngine {
             opacity: 0.95
         });
 
-        // North wall
         const northWall = new THREE.Mesh(new THREE.BoxGeometry(20, 5, 0.2), wallMat);
         northWall.position.set(0, 2.5, -10);
         northWall.castShadow = true;
         northWall.receiveShadow = true;
         this.scene.add(northWall);
 
-        // South wall (with window)
         const southWall = new THREE.Mesh(new THREE.BoxGeometry(20, 5, 0.2), wallMat);
         southWall.position.set(0, 2.5, 10);
         southWall.castShadow = true;
         this.scene.add(southWall);
 
-        // East wall
         const eastWall = new THREE.Mesh(new THREE.BoxGeometry(0.2, 5, 20), wallMat);
         eastWall.position.set(10, 2.5, 0);
         eastWall.castShadow = true;
         this.scene.add(eastWall);
 
-        // West wall
         const westWall = new THREE.Mesh(new THREE.BoxGeometry(0.2, 5, 20), wallMat);
         westWall.position.set(-10, 2.5, 0);
         westWall.castShadow = true;
@@ -310,7 +294,6 @@ class GameEngine {
     }
 
     createFurniture() {
-        // Couch for sitting
         const couchGeom = new THREE.BoxGeometry(3, 0.8, 1.5);
         const couchMat = new THREE.MeshStandardMaterial({ color: 0x8b5a7d });
         const couch = new THREE.Mesh(couchGeom, couchMat);
@@ -318,7 +301,6 @@ class GameEngine {
         couch.castShadow = true;
         this.scene.add(couch);
 
-        // Table
         const tableGeom = new THREE.BoxGeometry(2, 0.1, 1.5);
         const tableMat = new THREE.MeshStandardMaterial({ color: 0x4a3a3a });
         const table = new THREE.Mesh(tableGeom, tableMat);
@@ -328,7 +310,6 @@ class GameEngine {
     }
 
     createBonsai() {
-        // Pot
         const potGeom = new THREE.CylinderGeometry(0.3, 0.25, 0.4, 16);
         const potMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
         const pot = new THREE.Mesh(potGeom, potMat);
@@ -336,7 +317,6 @@ class GameEngine {
         pot.castShadow = true;
         this.scene.add(pot);
 
-        // Tree trunk
         const trunkGeom = new THREE.CylinderGeometry(0.05, 0.08, 0.6, 8);
         const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3020 });
         const trunk = new THREE.Mesh(trunkGeom, trunkMat);
@@ -344,7 +324,6 @@ class GameEngine {
         trunk.castShadow = true;
         this.scene.add(trunk);
 
-        // Foliage (cherry blossoms)
         const foliageGeom = new THREE.SphereGeometry(0.4, 16, 16);
         const foliageMat = new THREE.MeshStandardMaterial({ 
             color: 0xffb7c5,
@@ -357,7 +336,6 @@ class GameEngine {
         this.scene.add(foliage);
         this.bonsai = foliage;
 
-        // Interactive
         this.interactiveObjects.push({
             object: foliage,
             name: 'Bonsai Tree',
@@ -367,7 +345,6 @@ class GameEngine {
     }
 
     createTV() {
-        // TV screen
         const tvGeom = new THREE.BoxGeometry(4, 2.5, 0.1);
         const tvMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
         const tv = new THREE.Mesh(tvGeom, tvMat);
@@ -375,7 +352,6 @@ class GameEngine {
         tv.castShadow = true;
         this.scene.add(tv);
 
-        // Screen display (photo slideshow)
         const screenGeom = new THREE.PlaneGeometry(3.8, 2.3);
         const screenMat = new THREE.MeshStandardMaterial({ 
             color: 0xffffff,
@@ -387,10 +363,8 @@ class GameEngine {
         this.scene.add(screen);
         this.tvScreen = screen;
 
-        // Load first image
         this.updateTVSlideshow();
 
-        // Interactive
         this.interactiveObjects.push({
             object: tv,
             name: 'Photo Slideshow',
@@ -400,7 +374,6 @@ class GameEngine {
     }
 
     createPortrait() {
-        // Large portrait on wall
         const frameGeom = new THREE.BoxGeometry(2.5, 3.5, 0.1);
         const frameMat = new THREE.MeshStandardMaterial({ color: 0x8b7355 });
         const frame = new THREE.Mesh(frameGeom, frameMat);
@@ -409,7 +382,6 @@ class GameEngine {
         frame.castShadow = true;
         this.scene.add(frame);
 
-        // Portrait image
         const portraitGeom = new THREE.PlaneGeometry(2.3, 3.3);
         const loader = new THREE.TextureLoader();
         loader.load(this.bigPortrait, (texture) => {
@@ -426,7 +398,6 @@ class GameEngine {
     }
 
     createPostBox() {
-        // Cute postbox on roof
         const boxGeom = new THREE.BoxGeometry(0.8, 1, 0.6);
         const boxMat = new THREE.MeshStandardMaterial({ 
             color: 0xff4466,
@@ -438,14 +409,12 @@ class GameEngine {
         postbox.castShadow = true;
         this.scene.add(postbox);
 
-        // Flag
         const flagGeom = new THREE.BoxGeometry(0.5, 0.1, 0.05);
         const flagMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
         const flag = new THREE.Mesh(flagGeom, flagMat);
         flag.position.set(3.5, 9.2, 3);
         this.scene.add(flag);
 
-        // Interactive
         this.interactiveObjects.push({
             object: postbox,
             name: 'Love Letter Box',
@@ -455,7 +424,6 @@ class GameEngine {
     }
 
     createCandles() {
-        // Place candles around the room
         const candlePositions = [
             [-8, 0.6, -8], [8, 0.6, -8], [-8, 0.6, 8], [8, 0.6, 8],
             [-3, 0.6, -9], [3, 0.6, -9], [-9, 0.6, -3], [-9, 0.6, 3],
@@ -463,7 +431,6 @@ class GameEngine {
         ];
 
         candlePositions.forEach(pos => {
-            // Candle body
             const candleGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.3, 8);
             const candleMat = new THREE.MeshStandardMaterial({ color: 0xfff8dc });
             const candle = new THREE.Mesh(candleGeom, candleMat);
@@ -471,19 +438,16 @@ class GameEngine {
             candle.castShadow = true;
             this.scene.add(candle);
 
-            // Flame (point light)
             const flame = new THREE.PointLight(0xff9944, 1.5, 5);
             flame.position.set(pos[0], pos[1] + 0.2, pos[2]);
             flame.castShadow = true;
             this.scene.add(flame);
 
-            // Animated glow
             this.candles.push({ light: flame, baseY: pos[1] + 0.2 });
         });
     }
 
     createPlanetsAndStars() {
-        // Planets floating in space
         const planetData = [
             { pos: [40, 25, -70], radius: 3, color: 0xff8844, speed: 0.0005 },
             { pos: [-50, 30, -80], radius: 4, color: 0x4488ff, speed: 0.0003 },
@@ -504,12 +468,10 @@ class GameEngine {
             this.planets.push({ mesh: planet, speed: data.speed, angle: Math.random() * Math.PI * 2 });
         });
 
-        // Shooting stars
         this.createShootingStarSystem();
     }
 
     createShootingStarSystem() {
-        // Create shooting stars periodically
         setInterval(() => {
             if (!this.state.started || this.state.paused) return;
             
@@ -549,7 +511,6 @@ class GameEngine {
     }
 
     createSpaceCreatures() {
-        // Birds
         for (let i = 0; i < 80; i++) {
             const birdGeom = new THREE.ConeGeometry(0.15, 0.4, 4);
             const birdMat = new THREE.MeshStandardMaterial({ 
@@ -574,7 +535,6 @@ class GameEngine {
             });
         }
 
-        // Fish
         for (let i = 0; i < 60; i++) {
             const fishGeom = new THREE.SphereGeometry(0.2, 8, 8);
             fishGeom.scale(1.5, 1, 1);
@@ -599,7 +559,6 @@ class GameEngine {
             });
         }
 
-        // Stingrays
         for (let i = 0; i < 30; i++) {
             const rayGeom = new THREE.BoxGeometry(1, 0.1, 0.6);
             const rayMat = new THREE.MeshStandardMaterial({ 
@@ -626,10 +585,7 @@ class GameEngine {
     }
 
     createEnhancedParticleSystems() {
-        // Snowflakes outside only
         this.createSnowflakes();
-        
-        // Dust particles inside
         this.createDustParticles();
     }
 
@@ -643,7 +599,6 @@ class GameEngine {
             const y = Math.random() * 100;
             const z = (Math.random() - 0.5) * 200;
             
-            // Only create snow outside the house bounds
             if (Math.abs(x) > 12 || Math.abs(z) > 12 || y > 10) {
                 snowPositions.push(x, y, z);
             }
@@ -687,7 +642,6 @@ class GameEngine {
     }
 
     createElevatorSystem() {
-        // Elevator platform
         const elevatorGeom = new THREE.BoxGeometry(2, 0.1, 2);
         const elevatorMat = new THREE.MeshStandardMaterial({ 
             color: 0x555577,
@@ -700,7 +654,6 @@ class GameEngine {
         this.elevatorPlatform.receiveShadow = true;
         this.scene.add(this.elevatorPlatform);
 
-        // Elevator walls
         const wallGeom = new THREE.BoxGeometry(0.1, 3, 2);
         const wallMat = new THREE.MeshStandardMaterial({ 
             color: 0x444466,
@@ -718,22 +671,20 @@ class GameEngine {
         this.scene.add(rightWall);
         this.elevatorWalls.push(rightWall);
 
-        // Control panel
         const panelGeom = new THREE.BoxGeometry(0.4, 0.6, 0.1);
         const panelMat = new THREE.MeshStandardMaterial({ color: 0x222244 });
         const panel = new THREE.Mesh(panelGeom, panelMat);
         panel.position.set(7.2, 1.5, 7);
         this.scene.add(panel);
 
-        // Interactive buttons
         this.createElevatorButtons();
     }
 
     createElevatorButtons() {
         const buttonData = [
-            { label: 'R', floor: 1, y: 1.7 },  // Roof
-            { label: 'M', floor: 0, y: 1.5 },  // Main
-            { label: 'B', floor: -1, y: 1.3 } // Basement
+            { label: 'R', floor: 1, y: 1.7 },
+            { label: 'M', floor: 0, y: 1.5 },
+            { label: 'B', floor: -1, y: 1.3 }
         ];
 
         buttonData.forEach(data => {
@@ -778,7 +729,6 @@ class GameEngine {
             this.elevator.currentFloor = this.elevator.targetFloor;
             this.showNotification('Elevator arrived!');
             
-            // Update player position if on elevator
             const playerDist = this.state.player.pos.distanceTo(
                 new THREE.Vector3(8, this.elevatorPlatform.position.y + 1.6, 8)
             );
@@ -788,12 +738,10 @@ class GameEngine {
         } else {
             this.elevatorPlatform.position.y += Math.sign(diff) * this.elevator.speed;
             
-            // Move walls with platform
             this.elevatorWalls.forEach(wall => {
                 wall.position.y = this.elevatorPlatform.position.y + 1.5;
             });
 
-            // Move player if standing on elevator
             const playerDist = this.state.player.pos.distanceTo(
                 new THREE.Vector3(8, this.elevatorPlatform.position.y + 1.6, 8)
             );
@@ -804,7 +752,6 @@ class GameEngine {
     }
 
     createSitPoints() {
-        // Chairs and couch sit points
         const sitPositions = [
             { pos: [-5, 0.4, -5], name: 'Couch' },
             { pos: [-4, 0.4, -5], name: 'Couch' },
@@ -813,7 +760,6 @@ class GameEngine {
         ];
 
         sitPositions.forEach(data => {
-            // Create invisible trigger
             const sitGeom = new THREE.BoxGeometry(0.8, 0.8, 0.8);
             const sitMat = new THREE.MeshBasicMaterial({ 
                 color: 0x00ff00,
@@ -851,7 +797,6 @@ class GameEngine {
     }
 
     setupControls() {
-        // Keyboard
         window.addEventListener('keydown', (e) => {
             this.keys[e.code] = true;
             
@@ -870,7 +815,6 @@ class GameEngine {
             this.keys[e.code] = false;
         });
 
-        // Mouse look
         document.addEventListener('mousemove', (e) => {
             if (!this.state.started || this.state.paused || !this.state.player.canMove) return;
             
@@ -879,7 +823,6 @@ class GameEngine {
             this.targetCameraRotation.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.targetCameraRotation.pitch));
         });
 
-        // Lock pointer on click
         const canvas = document.getElementById('game-canvas');
         canvas.addEventListener('click', () => {
             if (this.state.started && !this.state.paused) {
@@ -887,7 +830,6 @@ class GameEngine {
             }
         });
 
-        // Window resize
         window.addEventListener('resize', () => {
             this.camera.aspect = window.innerWidth / window.innerHeight;
             this.camera.updateProjectionMatrix();
@@ -895,32 +837,40 @@ class GameEngine {
         });
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // FIXED UI – ALL CLOSE BUTTONS WORK
+    // ════════════════════════════════════════════════════════════════════
     setupUI() {
         // Start button
-        document.getElementById('btn-start').addEventListener('click', () => {
-            this.startGame();
-        });
+        document.getElementById('btn-start').addEventListener('click', () => this.startGame());
 
         // Pause menu
-        document.getElementById('btn-resume').addEventListener('click', () => {
-            this.togglePause();
-        });
+        document.getElementById('btn-resume').addEventListener('click', () => this.togglePause());
+        document.getElementById('btn-quit').addEventListener('click', () => this.quitToMenu());
 
-        document.getElementById('btn-quit').addEventListener('click', () => {
-            this.quitToMenu();
-        });
-
-        // Modal close buttons
+        // === MODAL CLOSE BUTTONS – FIXED VERSION ===
         document.querySelectorAll('.modal-x').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                e.target.closest('.modal').classList.remove('show');
+                const modal = e.target.closest('.modal');
+                if (modal) {
+                    modal.classList.remove('show');
+                    modal.style.display = 'none';
+                }
+            });
+        });
+
+        // === CLOSE MODALS WHEN CLICKING BACKGROUND ===
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('show');
+                    modal.style.display = 'none';
+                }
             });
         });
 
         // Water bonsai
-        document.getElementById('btn-water').addEventListener('click', () => {
-            this.waterPlant();
-        });
+        document.getElementById('btn-water').addEventListener('click', () => this.waterPlant());
 
         // Photo upload system
         this.setupPhotoUpload();
@@ -928,12 +878,11 @@ class GameEngine {
         // Custom letter system
         this.setupCustomLetter();
 
-        // Music player (placeholder)
+        // Music player
         this.setupMusicPlayer();
     }
 
     setupPhotoUpload() {
-        // Create upload button in HUD
         const uploadBtn = document.createElement('button');
         uploadBtn.className = 'act-btn tooltip upload-photos-btn';
         uploadBtn.setAttribute('data-tip', 'Upload Photos');
@@ -960,9 +909,7 @@ class GameEngine {
             input.type = 'file';
             input.multiple = true;
             input.accept = 'image/*';
-            input.addEventListener('change', (e) => {
-                this.handlePhotoUpload(e.target.files);
-            });
+            input.addEventListener('change', (e) => this.handlePhotoUpload(e.target.files));
             input.click();
         });
     }
@@ -981,7 +928,6 @@ class GameEngine {
     }
 
     setupCustomLetter() {
-        // Create letter write button
         const letterBtn = document.createElement('button');
         letterBtn.className = 'act-btn tooltip write-letter-btn';
         letterBtn.setAttribute('data-tip', 'Write Custom Letter');
@@ -1003,19 +949,21 @@ class GameEngine {
         `;
         document.body.appendChild(letterBtn);
 
-        letterBtn.addEventListener('click', () => {
-            this.openLetterEditor();
-        });
+        letterBtn.addEventListener('click', () => this.openLetterEditor());
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // FIXED LETTER EDITOR – USES STANDARD MODAL SYSTEM
+    // ════════════════════════════════════════════════════════════════════
     openLetterEditor() {
         const editor = document.createElement('div');
-        editor.className = 'letter-editor-modal';
+        editor.className = 'modal show'; // Use the same modal class
+        editor.style.display = 'flex';    // Ensure it's visible
         editor.innerHTML = `
             <div class="modal-box wide">
                 <div class="modal-head">
                     <h2>✍️ Write Your Custom Letter</h2>
-                    <button class="modal-x" onclick="this.closest('.letter-editor-modal').remove()">&times;</button>
+                    <button class="modal-x">&times;</button> <!-- No inline onclick -->
                 </div>
                 <div class="modal-body">
                     <textarea id="custom-letter-textarea" placeholder="Write your heartfelt message here..." style="
@@ -1030,34 +978,26 @@ class GameEngine {
                         font-size: 18px;
                         resize: vertical;
                     ">${this.state.customLetter}</textarea>
-                    <button class="btn btn-primary" onclick="game.saveCustomLetter()" style="margin-top: 20px;">
+                    <button class="btn btn-primary" id="save-letter-btn" style="margin-top: 20px;">
                         <i class="fas fa-save"></i> Save Letter
                     </button>
                 </div>
             </div>
         `;
-        editor.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-        `;
         document.body.appendChild(editor);
+
+        // Save button listener
+        document.getElementById('save-letter-btn').addEventListener('click', () => {
+            const textarea = document.getElementById('custom-letter-textarea');
+            this.state.customLetter = textarea.value;
+            this.showNotification('Letter saved! Check the postbox on the roof.');
+            editor.remove(); // Remove the modal element completely
+        });
     }
 
-    saveCustomLetter() {
-        const textarea = document.getElementById('custom-letter-textarea');
-        this.state.customLetter = textarea.value;
-        this.showNotification('Letter saved! Check the postbox on the roof.');
-        document.querySelector('.letter-editor-modal').remove();
-    }
-
+    // ════════════════════════════════════════════════════════════════════
+    // FIXED CUSTOM LETTER – DISPLAY: FLEX + EXPLICIT CLOSE BUTTON LISTENER
+    // ════════════════════════════════════════════════════════════════════
     openCustomLetter() {
         const modal = document.getElementById('modal-letter');
         const content = document.getElementById('letter-content-display');
@@ -1072,7 +1012,17 @@ class GameEngine {
         }
         
         modal.classList.add('show');
-        
+        modal.style.display = 'flex'; // Ensure it's visible
+
+        // Explicit close button listener for this modal
+        const closeBtn = modal.querySelector('.modal-x');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+            }, { once: true }); // Remove after one use to avoid duplicates
+        }
+
         if (!this.state.letterRead && this.state.customLetter) {
             this.state.letterRead = true;
             setTimeout(() => this.triggerValentineFireworks(), 1000);
@@ -1080,13 +1030,11 @@ class GameEngine {
     }
 
     setupMusicPlayer() {
-        // Placeholder - music controls already in HTML
         const playBtn = document.getElementById('mp-play');
         const prevBtn = document.getElementById('mp-prev');
         const nextBtn = document.getElementById('mp-next');
         const volumeSlider = document.getElementById('mp-volume');
 
-        // Simple toggle
         playBtn.addEventListener('click', () => {
             const icon = playBtn.querySelector('i');
             if (icon.classList.contains('fa-play')) {
@@ -1125,7 +1073,6 @@ class GameEngine {
     interact() {
         if (!this.state.started || this.state.paused) return;
 
-        // Check for interactive object in front of player
         const interactRange = 3;
         const playerPos = this.state.player.pos;
         const forward = new THREE.Vector3(0, 0, -1);
@@ -1149,25 +1096,24 @@ class GameEngine {
 
     openPlantModal() {
         document.getElementById('modal-plant').classList.add('show');
+        document.getElementById('modal-plant').style.display = 'flex';
     }
 
     waterPlant() {
         this.showNotification('🌸 Bonsai watered! It looks happier.');
-        // Animate bonsai glow
         if (this.bonsai) {
             this.bonsai.material.emissiveIntensity = 0.5;
-            setTimeout(() => {
-                this.bonsai.material.emissiveIntensity = 0.2;
-            }, 1000);
+            setTimeout(() => this.bonsai.material.emissiveIntensity = 0.2, 1000);
         }
-        document.getElementById('modal-plant').classList.remove('show');
+        const modal = document.getElementById('modal-plant');
+        modal.classList.remove('show');
+        modal.style.display = 'none';
     }
 
     triggerValentineFireworks() {
         if (this.state.fireworksActive) return;
         this.state.fireworksActive = true;
         
-        // Show Valentine message
         const msg = document.createElement('div');
         msg.className = 'valentine-message';
         msg.innerHTML = `
@@ -1189,7 +1135,6 @@ class GameEngine {
         `;
         document.body.appendChild(msg);
 
-        // Launch fireworks
         for (let i = 0; i < 15; i++) {
             setTimeout(() => this.launchFirework(), i * 300);
         }
@@ -1272,30 +1217,25 @@ class GameEngine {
             this.state.player.pos.add(moveVector.multiplyScalar(speed));
         }
 
-        // Jump
         if (this.keys['Space'] && this.state.player.canJump && !this.state.sitting) {
             this.physVelY = this.state.player.jumpPower;
             this.state.player.canJump = false;
         }
 
-        // Apply gravity
         this.physVelY -= 0.008;
         this.state.player.pos.y += this.physVelY;
 
-        // Floor collision
         if (this.state.player.pos.y < 1.6) {
             this.state.player.pos.y = 1.6;
             this.physVelY = 0;
             this.state.player.canJump = true;
         }
 
-        // Wall boundaries
         this.state.player.pos.x = Math.max(-9.5, Math.min(9.5, this.state.player.pos.x));
         this.state.player.pos.z = Math.max(-9.5, Math.min(9.5, this.state.player.pos.z));
     }
 
     updateCamera() {
-        // Smooth camera rotation with lerp
         const lerpFactor = 0.15;
         this.smoothRotation.yaw += (this.targetCameraRotation.yaw - this.smoothRotation.yaw) * lerpFactor;
         this.smoothRotation.pitch += (this.targetCameraRotation.pitch - this.smoothRotation.pitch) * lerpFactor;
@@ -1307,13 +1247,11 @@ class GameEngine {
     updateAnimations() {
         const time = this.clock.getElapsedTime();
 
-        // Animate candles
         this.candles.forEach((candle, i) => {
             candle.light.intensity = 1.5 + Math.sin(time * 3 + i) * 0.3;
             candle.light.position.y = candle.baseY + Math.sin(time * 2 + i) * 0.05;
         });
 
-        // Animate birds
         this.birds.forEach(bird => {
             bird.angle += bird.speed * this.delta;
             bird.mesh.position.x = Math.cos(bird.angle) * bird.radius;
@@ -1327,7 +1265,6 @@ class GameEngine {
             );
         });
 
-        // Animate fish
         this.fish.forEach(fish => {
             fish.angle += fish.speed * this.delta;
             fish.mesh.position.x = Math.cos(fish.angle) * fish.radius;
@@ -1340,7 +1277,6 @@ class GameEngine {
             );
         });
 
-        // Animate stingrays
         this.stingrays.forEach(ray => {
             ray.angle += ray.speed * this.delta;
             ray.wobble += 0.05;
@@ -1356,14 +1292,12 @@ class GameEngine {
             );
         });
 
-        // Animate planets
         this.planets.forEach(planet => {
             planet.angle += planet.speed;
             planet.mesh.rotation.y += 0.005;
             planet.mesh.position.y += Math.sin(time + planet.angle) * 0.01;
         });
 
-        // Update shooting stars
         for (let i = this.shootingStars.length - 1; i >= 0; i--) {
             const star = this.shootingStars[i];
             star.lifetime++;
@@ -1377,7 +1311,6 @@ class GameEngine {
             star.mesh.position.add(star.velocity);
             star.mesh.material.opacity = 1 - (star.lifetime / star.maxLifetime);
             
-            // Update trail
             const positions = star.mesh.geometry.attributes.position.array;
             for (let j = positions.length - 3; j >= 3; j -= 3) {
                 positions[j] = positions[j - 3];
@@ -1390,7 +1323,6 @@ class GameEngine {
             star.mesh.geometry.attributes.position.needsUpdate = true;
         }
 
-        // Update fireworks
         for (let i = this.fireworks.length - 1; i >= 0; i--) {
             const fw = this.fireworks[i];
             fw.lifetime++;
@@ -1406,13 +1338,12 @@ class GameEngine {
                 positions[j] += fw.velocities[j];
                 positions[j + 1] += fw.velocities[j + 1];
                 positions[j + 2] += fw.velocities[j + 2];
-                fw.velocities[j + 1] -= 0.003; // Gravity
+                fw.velocities[j + 1] -= 0.003;
             }
             fw.mesh.geometry.attributes.position.needsUpdate = true;
             fw.mesh.material.opacity = 1 - (fw.lifetime / fw.maxLifetime);
         }
 
-        // Snowflakes fall
         if (this.snowSystem) {
             const positions = this.snowSystem.mesh.geometry.attributes.position.array;
             for (let i = 1; i < positions.length; i += 3) {
@@ -1425,7 +1356,6 @@ class GameEngine {
             this.snowSystem.mesh.rotation.y += 0.0002;
         }
 
-        // Rotate dust particles
         if (this.dustSystem) {
             this.dustSystem.rotation.y += 0.0005;
         }
@@ -1439,6 +1369,7 @@ class GameEngine {
 
         if (!this.state.started || this.state.paused) {
             hint.classList.remove('show');
+            crosshair.classList.remove('active');
             return;
         }
 
@@ -1483,12 +1414,10 @@ class GameEngine {
         const date = document.getElementById('hud-date');
         const location = document.getElementById('hud-location');
 
-        // Current time
         const now = new Date();
         clock.textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
         date.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
-        // Location based on floor
         let loc = '🏠 Main Room';
         if (this.state.player.pos.y > 6) loc = '🏞️ Rooftop';
         else if (this.state.player.pos.y < -2) loc = '🔒 Basement';
@@ -1590,65 +1519,35 @@ window.game = game;
 const style = document.createElement('style');
 style.textContent = `
     @keyframes fadeInScale {
-        from {
-            opacity: 0;
-            transform: translate(-50%, -50%) scale(0.8);
-        }
-        to {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-        }
+        from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+        to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
     }
-
     @keyframes fadeOut {
-        to {
-            opacity: 0;
-            transform: translate(-50%, -50%) scale(0.9);
-        }
+        to { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
     }
-
     @keyframes notifSlide {
-        from {
-            opacity: 0;
-            transform: translateX(-50%) translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
+        from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
-
     @keyframes notifFadeOut {
-        to {
-            opacity: 0;
-            transform: translateX(-50%) translateY(-10px);
-        }
+        to { opacity: 0; transform: translateX(-50%) translateY(-10px); }
     }
-
     .modal.show {
         display: flex !important;
         animation: modalFadeIn 0.3s ease-out;
     }
-
     @keyframes modalFadeIn {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
-
     .crosshair.active .crosshair-ring {
         border-color: #ff6b8b;
         transform: scale(1.2);
     }
-
     .interact-hint {
         opacity: 0;
         transition: opacity 0.2s ease;
     }
-
     .interact-hint.show {
         opacity: 1;
     }
