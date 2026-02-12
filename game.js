@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// TAN'S HOME — ULTIMATE EDITION v150.0
-// The most romantic 3D sanctuary ever created
+// TAN'S HOME — ULTIMATE EDITION v151.0
+// Elevator fixed – now takes you to the roof smoothly
 // ═══════════════════════════════════════════════════════════════════════════
 
 class GameEngine {
@@ -98,7 +98,9 @@ class GameEngine {
             targetFloor: 0,
             currentFloor: 0,
             position: 0,
-            speed: 0.02
+            speed: 0.02,
+            platform: null,
+            walls: []
         };
 
         this.init();
@@ -195,6 +197,7 @@ class GameEngine {
     createWorld() {
         this.createSpaceSkybox();
         
+        // Main floor
         const floorGeom = new THREE.BoxGeometry(20, 0.2, 20);
         const floorMat = new THREE.MeshStandardMaterial({ 
             color: 0x2a1f3d,
@@ -208,6 +211,7 @@ class GameEngine {
 
         this.createWalls();
 
+        // Basement floor
         const basementFloor = new THREE.Mesh(
             new THREE.BoxGeometry(15, 0.2, 15),
             new THREE.MeshStandardMaterial({ color: 0x1a1520 })
@@ -216,6 +220,7 @@ class GameEngine {
         basementFloor.receiveShadow = true;
         this.scene.add(basementFloor);
 
+        // Roof platform
         const roofFloor = new THREE.Mesh(
             new THREE.BoxGeometry(18, 0.2, 18),
             new THREE.MeshStandardMaterial({ color: 0x2a2040 })
@@ -641,19 +646,22 @@ class GameEngine {
         this.dustSystem = dust;
     }
 
+    // ========== FIXED ELEVATOR SYSTEM ==========
     createElevatorSystem() {
+        // Elevator platform
         const elevatorGeom = new THREE.BoxGeometry(2, 0.1, 2);
         const elevatorMat = new THREE.MeshStandardMaterial({ 
             color: 0x555577,
             metalness: 0.6,
             roughness: 0.3
         });
-        this.elevatorPlatform = new THREE.Mesh(elevatorGeom, elevatorMat);
-        this.elevatorPlatform.position.set(8, 0.05, 8);
-        this.elevatorPlatform.castShadow = true;
-        this.elevatorPlatform.receiveShadow = true;
-        this.scene.add(this.elevatorPlatform);
+        this.elevator.platform = new THREE.Mesh(elevatorGeom, elevatorMat);
+        this.elevator.platform.position.set(8, 0.05, 8);
+        this.elevator.platform.castShadow = true;
+        this.elevator.platform.receiveShadow = true;
+        this.scene.add(this.elevator.platform);
 
+        // Elevator walls (transparent)
         const wallGeom = new THREE.BoxGeometry(0.1, 3, 2);
         const wallMat = new THREE.MeshStandardMaterial({ 
             color: 0x444466,
@@ -664,27 +672,29 @@ class GameEngine {
         const leftWall = new THREE.Mesh(wallGeom, wallMat);
         leftWall.position.set(7, 1.5, 8);
         this.scene.add(leftWall);
-        this.elevatorWalls = [leftWall];
+        this.elevator.walls = [leftWall];
 
         const rightWall = new THREE.Mesh(wallGeom, wallMat);
         rightWall.position.set(9, 1.5, 8);
         this.scene.add(rightWall);
-        this.elevatorWalls.push(rightWall);
+        this.elevator.walls.push(rightWall);
 
+        // Control panel
         const panelGeom = new THREE.BoxGeometry(0.4, 0.6, 0.1);
         const panelMat = new THREE.MeshStandardMaterial({ color: 0x222244 });
         const panel = new THREE.Mesh(panelGeom, panelMat);
         panel.position.set(7.2, 1.5, 7);
         this.scene.add(panel);
 
+        // Interactive buttons
         this.createElevatorButtons();
     }
 
     createElevatorButtons() {
         const buttonData = [
-            { label: 'R', floor: 1, y: 1.7 },
-            { label: 'M', floor: 0, y: 1.5 },
-            { label: 'B', floor: -1, y: 1.3 }
+            { label: 'R', floor: 1, y: 1.7 },  // Roof
+            { label: 'M', floor: 0, y: 1.5 },  // Main
+            { label: 'B', floor: -1, y: 1.3 } // Basement
         ];
 
         buttonData.forEach(data => {
@@ -696,7 +706,7 @@ class GameEngine {
             });
             const btn = new THREE.Mesh(btnGeom, btnMat);
             btn.position.set(7.15, data.y, 7);
-            btn.rotation.y = -Math.PI / 2;
+            btn.rotation.y = -Math.PI / 2; // Faces the player when at z>7
             this.scene.add(btn);
 
             this.interactiveObjects.push({
@@ -709,7 +719,14 @@ class GameEngine {
     }
 
     callElevator(targetFloor) {
-        if (this.elevator.moving) return;
+        if (this.elevator.moving) {
+            this.showNotification('Elevator is already moving...');
+            return;
+        }
+        if (targetFloor === this.elevator.currentFloor) {
+            this.showNotification(`Already on floor ${targetFloor === 1 ? 'Roof' : targetFloor === 0 ? 'Main' : 'Basement'}`);
+            return;
+        }
         
         this.elevator.moving = true;
         this.elevator.targetFloor = targetFloor;
@@ -719,37 +736,44 @@ class GameEngine {
     updateElevator() {
         if (!this.elevator.moving) return;
 
+        const platform = this.elevator.platform;
         const targetY = this.elevator.targetFloor * 8;
-        const currentY = this.elevatorPlatform.position.y;
+        const currentY = platform.position.y;
         const diff = targetY - currentY;
 
         if (Math.abs(diff) < 0.1) {
-            this.elevatorPlatform.position.y = targetY;
+            platform.position.y = targetY;
             this.elevator.moving = false;
             this.elevator.currentFloor = this.elevator.targetFloor;
             this.showNotification('Elevator arrived!');
             
-            const playerDist = this.state.player.pos.distanceTo(
-                new THREE.Vector3(8, this.elevatorPlatform.position.y + 1.6, 8)
-            );
-            if (playerDist < 2) {
+            // If player is on elevator, adjust their position
+            if (this.isPlayerOnElevator()) {
                 this.state.player.pos.y = targetY + 1.6;
             }
         } else {
-            this.elevatorPlatform.position.y += Math.sign(diff) * this.elevator.speed;
+            const step = Math.sign(diff) * this.elevator.speed;
+            platform.position.y += step;
             
-            this.elevatorWalls.forEach(wall => {
-                wall.position.y = this.elevatorPlatform.position.y + 1.5;
+            // Move walls with platform
+            this.elevator.walls.forEach(wall => {
+                wall.position.y = platform.position.y + 1.5;
             });
 
-            const playerDist = this.state.player.pos.distanceTo(
-                new THREE.Vector3(8, this.elevatorPlatform.position.y + 1.6, 8)
-            );
-            if (playerDist < 1.5) {
-                this.state.player.pos.y += Math.sign(diff) * this.elevator.speed;
+            // Move player if standing on elevator
+            if (this.isPlayerOnElevator()) {
+                this.state.player.pos.y += step;
             }
         }
     }
+
+    isPlayerOnElevator() {
+        const px = this.state.player.pos.x;
+        const pz = this.state.player.pos.z;
+        // Check if player is within the elevator platform area (with some tolerance)
+        return (px > 7 && px < 9 && pz > 7 && pz < 9);
+    }
+    // ============================================
 
     createSitPoints() {
         const sitPositions = [
@@ -837,9 +861,7 @@ class GameEngine {
         });
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    // FIXED UI – ALL CLOSE BUTTONS WORK
-    // ════════════════════════════════════════════════════════════════════
+    // ========== FIXED UI – ALL CLOSE BUTTONS WORK ==========
     setupUI() {
         // Start button
         document.getElementById('btn-start').addEventListener('click', () => this.startGame());
@@ -848,7 +870,7 @@ class GameEngine {
         document.getElementById('btn-resume').addEventListener('click', () => this.togglePause());
         document.getElementById('btn-quit').addEventListener('click', () => this.quitToMenu());
 
-        // === MODAL CLOSE BUTTONS – FIXED VERSION ===
+        // Modal close buttons – FIXED
         document.querySelectorAll('.modal-x').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const modal = e.target.closest('.modal');
@@ -859,7 +881,7 @@ class GameEngine {
             });
         });
 
-        // === CLOSE MODALS WHEN CLICKING BACKGROUND ===
+        // Close modals when clicking background
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
@@ -952,18 +974,15 @@ class GameEngine {
         letterBtn.addEventListener('click', () => this.openLetterEditor());
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    // FIXED LETTER EDITOR – USES STANDARD MODAL SYSTEM
-    // ════════════════════════════════════════════════════════════════════
     openLetterEditor() {
         const editor = document.createElement('div');
-        editor.className = 'modal show'; // Use the same modal class
-        editor.style.display = 'flex';    // Ensure it's visible
+        editor.className = 'modal show';
+        editor.style.display = 'flex';
         editor.innerHTML = `
             <div class="modal-box wide">
                 <div class="modal-head">
                     <h2>✍️ Write Your Custom Letter</h2>
-                    <button class="modal-x">&times;</button> <!-- No inline onclick -->
+                    <button class="modal-x">&times;</button>
                 </div>
                 <div class="modal-body">
                     <textarea id="custom-letter-textarea" placeholder="Write your heartfelt message here..." style="
@@ -986,18 +1005,14 @@ class GameEngine {
         `;
         document.body.appendChild(editor);
 
-        // Save button listener
         document.getElementById('save-letter-btn').addEventListener('click', () => {
             const textarea = document.getElementById('custom-letter-textarea');
             this.state.customLetter = textarea.value;
             this.showNotification('Letter saved! Check the postbox on the roof.');
-            editor.remove(); // Remove the modal element completely
+            editor.remove();
         });
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    // FIXED CUSTOM LETTER – DISPLAY: FLEX + EXPLICIT CLOSE BUTTON LISTENER
-    // ════════════════════════════════════════════════════════════════════
     openCustomLetter() {
         const modal = document.getElementById('modal-letter');
         const content = document.getElementById('letter-content-display');
@@ -1012,15 +1027,15 @@ class GameEngine {
         }
         
         modal.classList.add('show');
-        modal.style.display = 'flex'; // Ensure it's visible
+        modal.style.display = 'flex';
 
-        // Explicit close button listener for this modal
+        // Explicit close button listener
         const closeBtn = modal.querySelector('.modal-x');
         if (closeBtn) {
             closeBtn.addEventListener('click', () => {
                 modal.classList.remove('show');
                 modal.style.display = 'none';
-            }, { once: true }); // Remove after one use to avoid duplicates
+            }, { once: true });
         }
 
         if (!this.state.letterRead && this.state.customLetter) {
@@ -1073,10 +1088,13 @@ class GameEngine {
     interact() {
         if (!this.state.started || this.state.paused) return;
 
-        const interactRange = 3;
+        const interactRange = 4; // Increased for easier interaction
         const playerPos = this.state.player.pos;
         const forward = new THREE.Vector3(0, 0, -1);
         forward.applyEuler(this.camera.rotation);
+
+        let closestObj = null;
+        let closestDist = Infinity;
 
         for (const obj of this.interactiveObjects) {
             const dist = obj.object.position.distanceTo(playerPos);
@@ -1086,11 +1104,17 @@ class GameEngine {
                     .normalize();
                 const dot = forward.dot(dirToObj);
                 
-                if (dot > 0.7) {
-                    obj.action();
-                    return;
+                if (dot > 0.6) { // More forgiving angle
+                    if (dist < closestDist) {
+                        closestDist = dist;
+                        closestObj = obj;
+                    }
                 }
             }
+        }
+
+        if (closestObj) {
+            closestObj.action();
         }
     }
 
@@ -1231,6 +1255,7 @@ class GameEngine {
             this.state.player.canJump = true;
         }
 
+        // Boundaries
         this.state.player.pos.x = Math.max(-9.5, Math.min(9.5, this.state.player.pos.x));
         this.state.player.pos.z = Math.max(-9.5, Math.min(9.5, this.state.player.pos.z));
     }
@@ -1373,13 +1398,14 @@ class GameEngine {
             return;
         }
 
-        const interactRange = 3;
+        const interactRange = 4;
         const playerPos = this.state.player.pos;
         const forward = new THREE.Vector3(0, 0, -1);
         forward.applyEuler(this.camera.rotation);
 
         let closestObj = null;
-        let closestDot = 0.7;
+        let closestDot = 0.5;
+        let closestDist = Infinity;
 
         for (const obj of this.interactiveObjects) {
             const dist = obj.object.position.distanceTo(playerPos);
@@ -1389,8 +1415,9 @@ class GameEngine {
                     .normalize();
                 const dot = forward.dot(dirToObj);
                 
-                if (dot > closestDot) {
+                if (dot > closestDot && dist < closestDist) {
                     closestDot = dot;
+                    closestDist = dist;
                     closestObj = obj;
                 }
             }
@@ -1437,7 +1464,7 @@ class GameEngine {
         this.updateMovement();
         this.updateCamera();
         this.updateAnimations();
-        this.updateElevator();
+        this.updateElevator(); // Now elevator works!
         this.updateInteractionHint();
         this.updateHUD();
 
